@@ -1,0 +1,48 @@
+from django.contrib import admin
+from .models import Client, Hall, ClassSession, Attendance, Payment, RentPayment
+
+
+@admin.register(Client)
+class ClientAdmin(admin.ModelAdmin):
+    list_display = ['last_name', 'first_name', 'phone', 'email', 'is_active', 'created_at']
+    list_filter = ['is_active', 'created_at']
+    search_fields = ['first_name', 'last_name', 'phone', 'email']
+    ordering = ['last_name', 'first_name']
+
+
+@admin.register(Hall)
+class HallAdmin(admin.ModelAdmin):
+    list_display = ['name', 'address', 'price_per_hour']
+    search_fields = ['name', 'address']
+
+
+@admin.register(ClassSession)
+class ClassSessionAdmin(admin.ModelAdmin):
+    list_display = ['title', 'date_time', 'duration', 'hall', 'instructor', 'max_participants']
+    list_filter = ['date_time', 'hall', 'instructor']
+    search_fields = ['title', 'instructor']
+    ordering = ['-date_time']
+
+
+@admin.register(Attendance)
+class AttendanceAdmin(admin.ModelAdmin):
+    list_display = ['client', 'session', 'status', 'visited_at']
+    list_filter = ['status', 'session__date_time']
+    search_fields = ['client__first_name', 'client__last_name', 'session__title']
+    ordering = ['-visited_at']
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ['client', 'amount', 'payment_type', 'status', 'paid_at', 'sessions_count']
+    list_filter = ['payment_type', 'status', 'paid_at']
+    search_fields = ['client__first_name', 'client__last_name']
+    ordering = ['-paid_at']
+
+
+@admin.register(RentPayment)
+class RentPaymentAdmin(admin.ModelAdmin):
+    list_display = ['hall', 'rent_date', 'hours_rented', 'amount', 'status', 'paid_at']
+    list_filter = ['status', 'rent_date', 'hall']
+    search_fields = ['hall__name']
+    ordering = ['-rent_date']
