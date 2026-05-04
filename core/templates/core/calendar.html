@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Календарь занятий</title>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+        
+        #calendar {
+            max-width: 100%;
+            height: 80vh;
+        }
+        
+        .fc-event {
+            cursor: pointer;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+        
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+        
+        .close:hover {
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        .btn-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #45a049;
+        }
+        
+        .btn-danger {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #da190b;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .button-group {
+            margin-top: 25px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .hall-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background-color: #e0e0e0;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧘‍♀️ Календарь занятий</h1>
+        <div id="calendar"></div>
+    </div>
+
+    <!-- Модальное окно для создания/редактирования занятия -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Новое занятие</h2>
+            <form id="eventForm">
+                <input type="hidden" id="eventId">
+                
+                <div class="form-group">
+                    <label for="eventTitle">Название занятия *</label>
+                    <input type="text" id="eventTitle" required placeholder="Например: Хатха-йога">
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventStart">Дата и время начала *</label>
+                    <input type="datetime-local" id="eventStart" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventDuration">Длительность (минут)</label>
+                    <input type="number" id="eventDuration" value="60" min="15" step="15">
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventHall">Зал</label>
+                    <select id="eventHall">
+                        <option value="">Не выбран</option>
+                        {% for hall in halls %}
+                        <option value="{{ hall.id }}">{{ hall.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventInstructor">Инструктор</label>
+                    <input type="text" id="eventInstructor" placeholder="Имя инструктора">
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventMaxParticipants">Макс. участников</label>
+                    <input type="number" id="eventMaxParticipants" value="20" min="1">
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                    <button type="button" id="deleteBtn" class="btn btn-danger" style="display: none;">Удалить</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let calendar;
+        let currentEventId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const calendarEl = document.getElementById('calendar');
+            
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'ru',
+                firstDay: 1,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+                },
+                buttonText: {
+                    today: 'Сегодня',
+                    month: 'Месяц',
+                    week: 'Неделя',
+                    day: 'День',
+                    list: 'Список'
+                },
+                events: '/api/calendar/events/',
+                editable: true,
+                selectable: true,
+                selectMirror: true,
+                dayMaxEvents: true,
+                
+                // Клик по дате - создание нового события
+                select: function(info) {
+                    openModal(null, info.startStr);
+                },
+                
+                // Клик по событию - редактирование
+                eventClick: function(info) {
+                    openModal(info.event);
+                },
+                
+                // Перетаскивание события
+                eventDrop: function(info) {
+                    updateEvent(info.event);
+                },
+                
+                // Изменение длительности
+                eventResize: function(info) {
+                    updateEvent(info.event);
+                }
+            });
+            
+            calendar.render();
+            
+            // Настройка модального окна
+            const modal = document.getElementById('eventModal');
+            const closeBtn = document.querySelector('.close');
+            
+            closeBtn.onclick = function() {
+                closeModal();
+            };
+            
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    closeModal();
+                }
+            };
+            
+            // Обработка формы
+            document.getElementById('eventForm').onsubmit = function(e) {
+                e.preventDefault();
+                saveEvent();
+            };
+            
+            // Удаление события
+            document.getElementById('deleteBtn').onclick = function() {
+                if (currentEventId && confirm('Вы уверены, что хотите удалить это занятие?')) {
+                    deleteEvent(currentEventId);
+                }
+            };
+        });
+        
+        function openModal(event, startStr) {
+            const modal = document.getElementById('eventModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const deleteBtn = document.getElementById('deleteBtn');
+            
+            if (event) {
+                // Редактирование существующего события
+                currentEventId = event.id;
+                modalTitle.textContent = 'Редактировать занятие';
+                document.getElementById('eventId').value = event.id;
+                document.getElementById('eventTitle').value = event.title.replace(/ \([^)]*\)$/, '');
+                document.getElementById('eventStart').value = formatDateTime(event.start);
+                document.getElementById('eventDuration').value = event.extendedProps.duration || 60;
+                document.getElementById('eventInstructor').value = event.extendedProps.instructor || '';
+                document.getElementById('eventMaxParticipants').value = event.extendedProps.max_participants || 20;
+                document.getElementById('eventHall').value = event.extendedProps.hall_id || '';
+                deleteBtn.style.display = 'inline-block';
+            } else {
+                // Создание нового события
+                currentEventId = null;
+                modalTitle.textContent = 'Новое занятие';
+                document.getElementById('eventId').value = '';
+                document.getElementById('eventTitle').value = '';
+                document.getElementById('eventStart').value = startStr ? startStr.slice(0, 16) : '';
+                document.getElementById('eventDuration').value = 60;
+                document.getElementById('eventInstructor').value = '';
+                document.getElementById('eventMaxParticipants').value = 20;
+                document.getElementById('eventHall').value = '';
+                deleteBtn.style.display = 'none';
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('eventModal').style.display = 'none';
+            document.getElementById('eventForm').reset();
+        }
+        
+        function formatDateTime(date) {
+            if (!date) return '';
+            const d = new Date(date);
+            return d.toISOString().slice(0, 16);
+        }
+        
+        function saveEvent() {
+            const eventId = document.getElementById('eventId').value;
+            const data = {
+                title: document.getElementById('eventTitle').value,
+                start: document.getElementById('eventStart').value,
+                duration: parseInt(document.getElementById('eventDuration').value),
+                hall_id: document.getElementById('eventHall').value || null,
+                instructor: document.getElementById('eventInstructor').value,
+                max_participants: parseInt(document.getElementById('eventMaxParticipants').value),
+            };
+            
+            const url = eventId ? `/api/calendar/events/${eventId}/` : '/api/calendar/events/create/';
+            const method = eventId ? 'PUT' : 'POST';
+            
+            fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    calendar.refetchEvents();
+                    closeModal();
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                alert('Ошибка при сохранении: ' + error);
+            });
+        }
+        
+        function updateEvent(event) {
+            const data = {
+                start: event.start.toISOString(),
+                duration: event.end ? Math.round((event.end - event.start) / 60000) : 60,
+            };
+            
+            fetch(`/api/calendar/events/${event.id}/`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    calendar.refetchEvents();
+                    alert('Ошибка при обновлении: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                calendar.refetchEvents();
+                console.error('Error:', error);
+            });
+        }
+        
+        function deleteEvent(eventId) {
+            fetch(`/api/calendar/events/${eventId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    calendar.refetchEvents();
+                    closeModal();
+                } else {
+                    alert('Ошибка при удалении: ' + (data.error || 'Неизвестная ошибка'));
+                }
+            })
+            .catch(error => {
+                alert('Ошибка при удалении: ' + error);
+            });
+        }
+        
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

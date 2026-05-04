@@ -1,32 +1,37 @@
 ```
-# Database
-db.sqlite3
-
-# Dependencies
-venv/
-.venv/
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
 env/
+venv/
+.venv/
+.ENV
+.env
+.env.*
+.env.local
 .venv.bak/
 pip-log.txt
-pip-delete-this-directory.txt
+pip-selfcheck.json
+.pytest_cache/
+.mypy_cache/
+.coverage
+coverage/
 
-# Environment variables
-.env
-.env.local
-*.env.*
+# Web artifacts
+staticfiles/
+media/
+*.css.map
+*.js.map
 
 # Logs
 *.log
 
-# Coverage
-.coverage
-coverage/
-htmlcov/
+# OS
+.DS_Store
+Thumbs.db
 
 # IDE
 .vscode/
@@ -35,12 +40,14 @@ htmlcov/
 *.swo
 *.tmp
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Build artifacts
-build/
-dist/
-*.egg-info/
+# Compressed files
+*.zip
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.gz
+*.bz2
+*.xz
+*.7z
+*.rar
 ```
