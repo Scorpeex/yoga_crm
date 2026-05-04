@@ -3,14 +3,15 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
 from datetime import datetime, timedelta
-from .models import ClassSession, Hall
+from .models import ClassSession, Hall, ClassType
 from django.utils import timezone
 
 
 def calendar_view(request):
     """Отображение календаря занятий"""
     halls = Hall.objects.all()
-    return render(request, 'core/calendar.html', {'halls': halls})
+    class_types = ClassType.objects.all()
+    return render(request, 'core/calendar.html', {'halls': halls, 'class_types': class_types})
 
 
 def get_events(request):
@@ -35,13 +36,13 @@ def get_events(request):
     sessions = ClassSession.objects.filter(
         date_time__gte=start_date,
         date_time__lte=end_date.replace(hour=23, minute=59, second=59)
-    ).select_related('hall')
+    ).select_related('hall', 'class_type')
     
     events = []
     for session in sessions:
         events.append({
             'id': session.id,
-            'title': f"{session.title} ({session.instructor})",
+            'title': f"{session.class_type.name}",
             'start': session.date_time.isoformat(),
             'end': (session.date_time + timedelta(minutes=session.duration)).isoformat(),
             'hall': session.hall.name if session.hall else '',
@@ -56,28 +57,35 @@ def create_event(request):
     """Создание нового занятия"""
     try:
         data = json.loads(request.body)
-        title = data.get('title', 'Новое занятие')
+        class_type_id = data.get('class_type_id')
         start = data.get('start')
         hall_id = data.get('hall_id')
-        duration = data.get('duration', 60)
-        instructor = data.get('instructor', '')
+        duration = data.get('duration')
         max_participants = data.get('max_participants', 20)
         
         if not start:
             return JsonResponse({'error': 'Дата начала обязательна'}, status=400)
         
+        if not class_type_id:
+            return JsonResponse({'error': 'Тип занятия обязателен'}, status=400)
+        
         date_time = datetime.fromisoformat(start.replace('Z', '+00:00'))
+        
+        class_type = get_object_or_404(ClassType, id=class_type_id)
+        
+        # Если длительность не указана, берем из типа занятия
+        if not duration:
+            duration = class_type.duration_minutes
         
         hall = None
         if hall_id:
             hall = get_object_or_404(Hall, id=hall_id)
         
         session = ClassSession.objects.create(
-            title=title,
+            class_type=class_type,
             date_time=date_time,
             duration=duration,
             hall=hall,
-            instructor=instructor,
             max_participants=max_participants,
         )
         
@@ -85,7 +93,7 @@ def create_event(request):
             'success': True,
             'event': {
                 'id': session.id,
-                'title': session.title,
+                'title': session.class_type.name,
                 'start': session.date_time.isoformat(),
                 'end': (session.date_time + timedelta(minutes=session.duration)).isoformat(),
             }
@@ -105,19 +113,19 @@ def update_event(request, event_id):
         else:
             data = json.loads(request.body)
         
-        if 'title' in data:
-            session.title = data['title']
+        if 'class_type_id' in data and data['class_type_id']:
+            session.class_type = get_object_or_404(ClassType, id=data['class_type_id'])
         if 'start' in data:
             session.date_time = datetime.fromisoformat(data['start'].replace('Z', '+00:00'))
         if 'duration' in data:
             session.duration = data['duration']
+        elif session.class_type and not session.duration:
+            session.duration = session.class_type.duration_minutes
         if 'hall_id' in data:
             if data['hall_id']:
                 session.hall = get_object_or_404(Hall, id=data['hall_id'])
             else:
                 session.hall = None
-        if 'instructor' in data:
-            session.instructor = data['instructor']
         if 'max_participants' in data:
             session.max_participants = data['max_participants']
         
@@ -127,7 +135,7 @@ def update_event(request, event_id):
             'success': True,
             'event': {
                 'id': session.id,
-                'title': session.title,
+                'title': session.class_type.name,
                 'start': session.date_time.isoformat(),
                 'end': (session.date_time + timedelta(minutes=session.duration)).isoformat(),
             }

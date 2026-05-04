@@ -2,6 +2,21 @@ from django.db import models
 from django.utils import timezone
 
 
+class ClassType(models.Model):
+    """Справочник типов занятий"""
+    name = models.CharField("Название занятия", max_length=100)
+    description = models.TextField("Описание", blank=True)
+    duration_minutes = models.PositiveIntegerField("Стандартная длительность (мин)", default=60)
+
+    class Meta:
+        verbose_name = "Тип занятия"
+        verbose_name_plural = "Типы занятий"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class Client(models.Model):
     """Модель клиента (ученика)"""
     first_name = models.CharField("Имя", max_length=100)
@@ -36,11 +51,10 @@ class Hall(models.Model):
 
 class ClassSession(models.Model):
     """Модель занятия"""
-    title = models.CharField("Название занятия", max_length=200)
+    class_type = models.ForeignKey(ClassType, on_delete=models.CASCADE, verbose_name="Занятие")
     date_time = models.DateTimeField("Дата и время")
     duration = models.PositiveIntegerField("Длительность (мин)", default=60)
     hall = models.ForeignKey(Hall, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Зал")
-    instructor = models.CharField("Инструктор", max_length=100, default="")
     max_participants = models.PositiveIntegerField("Макс. участников", default=20)
 
     class Meta:
@@ -49,7 +63,13 @@ class ClassSession(models.Model):
         ordering = ['-date_time']
 
     def __str__(self):
-        return f"{self.title} - {self.date_time.strftime('%d.%m.%Y %H:%M')}"
+        return f"{self.class_type.name} - {self.date_time.strftime('%d.%m.%Y %H:%M')}"
+
+    def save(self, *args, **kwargs):
+        # Автоматически устанавливаем длительность из типа занятия, если не указана явно
+        if not self.duration and self.class_type:
+            self.duration = self.class_type.duration_minutes
+        super().save(*args, **kwargs)
 
 
 class Attendance(models.Model):

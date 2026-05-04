@@ -169,13 +169,19 @@
                 <input type="hidden" id="eventId">
                 
                 <div class="form-group">
-                    <label for="eventTitle">Название занятия *</label>
-                    <input type="text" id="eventTitle" required placeholder="Например: Хатха-йога">
+                    <label for="eventClassType">Тип занятия *</label>
+                    <select id="eventClassType" required>
+                        <option value="">Выберите тип занятия</option>
+                        {% for class_type in class_types %}
+                        <option value="{{ class_type.id }}" data-duration="{{ class_type.duration_minutes }}">{{ class_type.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 
                 <div class="form-group">
-                    <label for="eventStart">Дата и время начала *</label>
-                    <input type="datetime-local" id="eventStart" required>
+                    <label for="eventStart">Время начала *</label>
+                    <input type="time" id="eventStart" required>
+                    <small style="color: #666; display: block; margin-top: 5px;">Дата: <span id="selectedDate"></span></small>
                 </div>
                 
                 <div class="form-group">
@@ -191,11 +197,6 @@
                         <option value="{{ hall.id }}">{{ hall.name }}</option>
                         {% endfor %}
                     </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="eventInstructor">Инструктор</label>
-                    <input type="text" id="eventInstructor" placeholder="Имя инструктора">
                 </div>
                 
                 <div class="form-group">
@@ -215,6 +216,7 @@
     <script>
         let calendar;
         let currentEventId = null;
+        let selectedDateFromClick = null; // Сохраняем дату из клика по календарю
 
         document.addEventListener('DOMContentLoaded', function() {
             const calendarEl = document.getElementById('calendar');
@@ -243,6 +245,7 @@
                 
                 // Клик по дате - создание нового события
                 select: function(info) {
+                    selectedDateFromClick = info.startStr; // Сохраняем полную дату и время клика
                     openModal(null, info.startStr);
                 },
                 
@@ -290,22 +293,57 @@
                     deleteEvent(currentEventId);
                 }
             };
+            
+            // Автозаполнение длительности при выборе типа занятия
+            document.getElementById('eventClassType').addEventListener('change', function(e) {
+                const selectedOption = e.target.options[e.target.selectedIndex];
+                const duration = selectedOption.getAttribute('data-duration');
+                if (duration) {
+                    document.getElementById('eventDuration').value = duration;
+                }
+            });
         });
         
         function openModal(event, startStr) {
             const modal = document.getElementById('eventModal');
             const modalTitle = document.getElementById('modalTitle');
             const deleteBtn = document.getElementById('deleteBtn');
+            const selectedDateSpan = document.getElementById('selectedDate');
+            
+            // Извлекаем дату из startStr (формат YYYY-MM-DD или YYYY-MM-DDTHH:MM:SS)
+            let selectedDate = '';
+            let selectedTime = '';
+            if (startStr) {
+                selectedDate = startStr.slice(0, 10); // YYYY-MM-DD
+                if (startStr.length > 11) {
+                    selectedTime = startStr.slice(11, 16); // HH:MM
+                }
+            }
             
             if (event) {
                 // Редактирование существующего события
                 currentEventId = event.id;
                 modalTitle.textContent = 'Редактировать занятие';
                 document.getElementById('eventId').value = event.id;
-                document.getElementById('eventTitle').value = event.title.replace(/ \([^)]*\)$/, '');
-                document.getElementById('eventStart').value = formatDateTime(event.start);
+                
+                // Устанавливаем тип занятия (по названию ищем в списке)
+                const classTypeSelect = document.getElementById('eventClassType');
+                const eventTitle = event.title;
+                for (let option of classTypeSelect.options) {
+                    if (option.text === eventTitle) {
+                        classTypeSelect.value = option.value;
+                        break;
+                    }
+                }
+                
+                // Время начала
+                const startTime = event.start.toTimeString().slice(0, 5); // HH:MM
+                document.getElementById('eventStart').value = startTime;
+                
+                // Показываем дату
+                selectedDateSpan.textContent = event.start.toLocaleDateString('ru-RU');
+                
                 document.getElementById('eventDuration').value = event.extendedProps.duration || 60;
-                document.getElementById('eventInstructor').value = event.extendedProps.instructor || '';
                 document.getElementById('eventMaxParticipants').value = event.extendedProps.max_participants || 20;
                 document.getElementById('eventHall').value = event.extendedProps.hall_id || '';
                 deleteBtn.style.display = 'inline-block';
@@ -314,10 +352,25 @@
                 currentEventId = null;
                 modalTitle.textContent = 'Новое занятие';
                 document.getElementById('eventId').value = '';
-                document.getElementById('eventTitle').value = '';
-                document.getElementById('eventStart').value = startStr ? startStr.slice(0, 16) : '';
+                document.getElementById('eventClassType').value = '';
+                
+                // Время из клика или пустое
+                document.getElementById('eventStart').value = selectedTime || '10:00';
+                
+                // Показываем выбранную дату
+                if (selectedDate) {
+                    const dateObj = new Date(selectedDate);
+                    selectedDateSpan.textContent = dateObj.toLocaleDateString('ru-RU', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                } else {
+                    selectedDateSpan.textContent = new Date().toLocaleDateString('ru-RU');
+                }
+                
                 document.getElementById('eventDuration').value = 60;
-                document.getElementById('eventInstructor').value = '';
                 document.getElementById('eventMaxParticipants').value = 20;
                 document.getElementById('eventHall').value = '';
                 deleteBtn.style.display = 'none';
@@ -339,14 +392,34 @@
         
         function saveEvent() {
             const eventId = document.getElementById('eventId').value;
+            
             const data = {
-                title: document.getElementById('eventTitle').value,
+                class_type_id: parseInt(document.getElementById('eventClassType').value),
                 start: document.getElementById('eventStart').value,
                 duration: parseInt(document.getElementById('eventDuration').value),
                 hall_id: document.getElementById('eventHall').value || null,
-                instructor: document.getElementById('eventInstructor').value,
                 max_participants: parseInt(document.getElementById('eventMaxParticipants').value),
             };
+            
+            // Если создаем новое событие, используем дату из клика по календарю
+            if (!eventId) {
+                if (selectedDateFromClick) {
+                    // Берем дату из selectedDateFromClick (формат YYYY-MM-DD или YYYY-MM-DDTHH:MM:SS)
+                    const datePart = selectedDateFromClick.slice(0, 10); // YYYY-MM-DD
+                    data.start = `${datePart}T${data.start}`;
+                } else {
+                    const today = new Date();
+                    const datePart = today.toISOString().split('T')[0];
+                    data.start = `${datePart}T${data.start}`;
+                }
+            } else {
+                // При редактировании нужно получить полную дату из события календаря
+                const eventObj = calendar.getEventById(eventId);
+                if (eventObj) {
+                    const datePart = eventObj.start.toISOString().split('T')[0];
+                    data.start = `${datePart}T${data.start}`;
+                }
+            }
             
             const url = eventId ? `/api/calendar/events/${eventId}/` : '/api/calendar/events/create/';
             const method = eventId ? 'PUT' : 'POST';
