@@ -16,10 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from core.admin import admin_site
 from core import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', admin_site.urls),
     path('calendar/', views.calendar_view, name='calendar'),
     path('api/calendar/events/', views.get_events, name='get_events'),
     path('api/calendar/events/create/', views.create_event, name='create_event'),
