@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.utils.html import format_html
+from django.urls import reverse
 from .models import ClassType, Client, Hall, ClassSession, Attendance, Payment, RentPayment
 
 
@@ -54,3 +56,27 @@ class RentPaymentAdmin(admin.ModelAdmin):
     list_filter = ['status', 'rent_date', 'hall']
     search_fields = ['hall__name']
     ordering = ['-rent_date']
+
+
+class YogaCRMAdminSite(admin.AdminSite):
+    site_header = 'Yoga CRM - Администрирование'
+    site_title = 'Yoga CRM'
+    index_title = 'Панель управления'
+    
+    def index(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['calendar_url'] = reverse('calendar')
+        return super().index(request, extra_context)
+
+
+# Создаем пользовательский сайт админа
+admin_site = YogaCRMAdminSite(name='yoga_admin')
+
+# Регистрируем все модели в новом сайте
+admin_site.register(ClassType, ClassTypeAdmin)
+admin_site.register(Client, ClientAdmin)
+admin_site.register(Hall, HallAdmin)
+admin_site.register(ClassSession, ClassSessionAdmin)
+admin_site.register(Attendance, AttendanceAdmin)
+admin_site.register(Payment, PaymentAdmin)
+admin_site.register(RentPayment, RentPaymentAdmin)

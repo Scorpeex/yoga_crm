@@ -1,0 +1,21 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="module">
+    <table>
+        <thead>
+            <tr>
+                <th colspan="2">{% translate 'Quick links' %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><a href="{% url 'calendar' %}">🧘‍♀️ Календарь занятий</a></td>
+                <td>{% translate 'View calendar' %}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{{ block.super }}
+{% endblock %}
