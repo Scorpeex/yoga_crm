@@ -27,9 +27,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-# Time zone settings
+# Timezone settings
 TIME_ZONE = 'Europe/Moscow'
-USE_TZ = False  # Отключаем UTC, используем локальное время напрямую
+USE_TZ = False  # Отключаем UTC, храним время локально
 
 
 # Application definition

@@ -75,7 +75,8 @@ def create_event(request):
         if not class_type_id:
             return JsonResponse({'error': 'Тип занятия обязателен'}, status=400)
         
-        date_time = datetime.fromisoformat(start.replace('Z', '+00:00'))
+        # Парсим дату без конвертации в UTC (локальное время)
+        date_time = datetime.fromisoformat(start.replace('Z', ''))
         
         class_type = get_object_or_404(ClassType, id=class_type_id)
         
@@ -100,8 +101,8 @@ def create_event(request):
             'event': {
                 'id': session.id,
                 'title': session.class_type.name,
-                'start': session.date_time.isoformat(),
-                'end': (session.date_time + timedelta(minutes=session.duration)).isoformat(),
+                'start': session.date_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                'end': (session.date_time + timedelta(minutes=session.duration)).strftime('%Y-%m-%dT%H:%M:%S'),
             }
         })
     except Exception as e:
@@ -122,7 +123,7 @@ def update_event(request, event_id):
         if 'class_type_id' in data and data['class_type_id']:
             session.class_type = get_object_or_404(ClassType, id=data['class_type_id'])
         if 'start' in data:
-            session.date_time = datetime.fromisoformat(data['start'].replace('Z', '+00:00'))
+            session.date_time = datetime.fromisoformat(data['start'].replace('Z', ''))
         if 'duration' in data:
             session.duration = data['duration']
         elif session.class_type and not session.duration:
@@ -142,8 +143,8 @@ def update_event(request, event_id):
             'event': {
                 'id': session.id,
                 'title': session.class_type.name,
-                'start': session.date_time.isoformat(),
-                'end': (session.date_time + timedelta(minutes=session.duration)).isoformat(),
+                'start': session.date_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                'end': (session.date_time + timedelta(minutes=session.duration)).strftime('%Y-%m-%dT%H:%M:%S'),
             }
         })
     except Exception as e:
