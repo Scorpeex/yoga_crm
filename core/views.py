@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -5,6 +6,8 @@ import json
 from datetime import datetime, timedelta
 from .models import ClassSession, Hall, ClassType
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
+import pytz
 
 
 def calendar_view(request):
@@ -39,12 +42,20 @@ def get_events(request):
     ).select_related('hall', 'class_type')
     
     events = []
+    moscow_tz = pytz.timezone('Europe/Moscow')
+    
     for session in sessions:
+        # Конвертируем время в московский часовой пояс для отображения
+        if timezone.is_aware(session.date_time):
+            local_dt = session.date_time.astimezone(moscow_tz)
+        else:
+            local_dt = moscow_tz.localize(session.date_time)
+        
         events.append({
             'id': str(session.id),
             'title': f"{session.class_type.name}",
-            'start': session.date_time.strftime('%Y-%m-%dT%H:%M:%S'),
-            'end': (session.date_time + timedelta(minutes=session.duration)).strftime('%Y-%m-%dT%H:%M:%S'),
+            'start': local_dt.strftime('%Y-%m-%dT%H:%M:%S'),
+            'end': (local_dt + timedelta(minutes=session.duration)).strftime('%Y-%m-%dT%H:%M:%S'),
             'allDay': False,
             'extendedProps': {
                 'hall_id': session.hall.id if session.hall else None,

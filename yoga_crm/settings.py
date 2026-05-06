@@ -27,9 +27,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-# Timezone settings
+# Timezone settings - дублирование на всякий случай, чтобы переопределить значения ниже
 TIME_ZONE = 'Europe/Moscow'
-USE_TZ = False  # Отключаем UTC, храним время локально
+USE_TZ = False
 
 
 # Application definition
@@ -113,7 +113,7 @@ TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False  # Отключаем UTC, храним время локально для простоты
 
 
 # Static files (CSS, JavaScript, Images)

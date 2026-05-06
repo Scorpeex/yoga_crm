@@ -1,50 +1,46 @@
 ```
-# Python
-__pycache__/
+# Compiled and build artifacts
 *.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
+__pycache__/
+*.o
+*.obj
+
+# Dependencies
 .venv/
-.ENV
-.python-version
+venv/
+node_modules/
 
-# Django/Python web framework
+# Logs and temp files
 *.log
-*.pot
-*.pyc
-__pycache__/
-.pytest_cache/
-.coverage
-htmlcov/
-coverage/
-*.sqlite3
-*.sqlite3-journal
-media/
-staticfiles/
+*.tmp
+*.swp
 
-# Environment variables
+# Environment
 .env
 .env.local
-.env.*
-!.env.example
+*.env.*
 
-# IDE
+# Editors
 .vscode/
 .idea/
-*.swp
-*.swo
-*.tmp
 
-# OS
-.DS_Store
-Thumbs.db
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
 
-# Logs
-*.log
+# Python specific
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
 
-# Coverage
-.coverage*
+# Django specific
+*.sqlite3
+db.sqlite3
+media/
+staticfiles/
 ```
