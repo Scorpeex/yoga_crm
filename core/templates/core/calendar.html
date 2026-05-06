@@ -332,6 +332,8 @@
                 for (let option of classTypeSelect.options) {
                     if (option.text === eventTitle) {
                         classTypeSelect.value = option.value;
+                        // Триггерим изменение для обновления длительности
+                        classTypeSelect.dispatchEvent(new Event('change'));
                         break;
                     }
                 }

@@ -41,15 +41,21 @@ def get_events(request):
     events = []
     for session in sessions:
         events.append({
-            'id': session.id,
+            'id': str(session.id),
             'title': f"{session.class_type.name}",
-            'start': session.date_time.isoformat(),
-            'end': (session.date_time + timedelta(minutes=session.duration)).isoformat(),
-            'hall': session.hall.name if session.hall else '',
-            'editable': True,
+            'start': session.date_time.strftime('%Y-%m-%dT%H:%M:%S'),
+            'end': (session.date_time + timedelta(minutes=session.duration)).strftime('%Y-%m-%dT%H:%M:%S'),
+            'allDay': False,
+            'extendedProps': {
+                'hall_id': session.hall.id if session.hall else None,
+                'hall_name': session.hall.name if session.hall else '',
+                'duration': session.duration,
+                'max_participants': session.max_participants,
+                'description': session.class_type.description if session.class_type.description else ''
+            }
         })
     
-    return JsonResponse({'events': events})
+    return JsonResponse(events, safe=False)
 
 
 @require_http_methods(["POST"])
