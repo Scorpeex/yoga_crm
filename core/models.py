@@ -37,9 +37,22 @@ class Client(models.Model):
 
 class Hall(models.Model):
     """Модель зала для аренды"""
+    COLOR_CHOICES = [
+        ('#FF6B6B', 'Красный'),
+        ('#4ECDC4', 'Бирюзовый'),
+        ('#45B7D1', 'Голубой'),
+        ('#96CEB4', 'Зеленый'),
+        ('#FFEAA7', 'Желтый'),
+        ('#DDA0DD', 'Фиолетовый'),
+        ('#FFA07A', 'Оранжевый'),
+        ('#98D8C8', 'Мятный'),
+        ('#F7DC6F', 'Лимонный'),
+        ('#BB8FCE', 'Лавандовый'),
+    ]
     name = models.CharField("Название зала", max_length=100)
     address = models.TextField("Адрес", blank=True)
     price_per_hour = models.DecimalField("Цена за час", max_digits=10, decimal_places=2, default=0)
+    color = models.CharField("Цвет события", max_length=7, choices=COLOR_CHOICES, default='#4ECDC4')
 
     class Meta:
         verbose_name = "Зал"

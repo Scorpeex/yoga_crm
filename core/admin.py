@@ -21,8 +21,18 @@ class ClientAdmin(admin.ModelAdmin):
 
 @admin.register(Hall)
 class HallAdmin(admin.ModelAdmin):
-    list_display = ['name', 'address', 'price_per_hour']
+    list_display = ['name', 'address', 'price_per_hour', 'color_sample']
     search_fields = ['name', 'address']
+    
+    def color_sample(self, obj):
+        if obj.color:
+            return format_html(
+                '<span style="display: inline-block; width: 20px; height: 20px; background-color: {}; border: 1px solid #ccc; border-radius: 3px;"></span> {}',
+                obj.color,
+                obj.get_color_display()
+            )
+        return '-'
+    color_sample.short_description = 'Цвет'
 
 
 @admin.register(ClassSession)
