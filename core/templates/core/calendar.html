@@ -459,6 +459,10 @@
                     hourBtn.style.background = '#4CAF50';
                     hourBtn.style.color = 'white';
                     selectedHour = h.toString().padStart(2, '0');
+                    // Если минуты уже выбраны, автоматически применяем время и закрываем окно
+                    if (selectedMinute !== null) {
+                        applyTimeSelection();
+                    }
                 });
                 hoursGrid.appendChild(hourBtn);
             }
@@ -475,6 +479,10 @@
                     minuteBtn.style.background = '#4CAF50';
                     minuteBtn.style.color = 'white';
                     selectedMinute = m.toString().padStart(2, '0');
+                    // Если часы уже выбраны, автоматически применяем время и закрываем окно
+                    if (selectedHour !== null) {
+                        applyTimeSelection();
+                    }
                 });
                 minutesGrid.appendChild(minuteBtn);
             }
