@@ -194,11 +194,11 @@
                         <div style="display: flex; gap: 20px; margin-top: 20px;">
                             <div style="flex: 1;">
                                 <label>Часы</label>
-                                <div id="hoursGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-height: 200px; overflow-y: auto;"></div>
+                                <div id="hoursColumn" style="display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto;"></div>
                             </div>
                             <div style="flex: 1;">
                                 <label>Минуты</label>
-                                <div id="minutesGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-height: 200px; overflow-y: auto;"></div>
+                                <div id="minutesColumn" style="display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto;"></div>
                             </div>
                         </div>
                         <div class="button-group" style="margin-top: 20px;">
@@ -408,8 +408,8 @@
                 document.getElementById('eventId').value = '';
                 document.getElementById('eventClassType').value = '';
                 
-                // Время из клика или пустое
-                document.getElementById('eventStart').value = selectedTime || '10:00';
+                // Время из клика или пустое (без значения по умолчанию)
+                document.getElementById('eventStart').value = selectedTime || '';
                 
                 // Показываем выбранную дату
                 if (selectedDate) {
@@ -442,10 +442,10 @@
         let selectedHour = null;
         let selectedMinute = null;
         
-        // Инициализация сеток часов и минут
+        // Инициализация столбцов часов и минут
         function initTimePicker() {
-            const hoursGrid = document.getElementById('hoursGrid');
-            const minutesGrid = document.getElementById('minutesGrid');
+            const hoursColumn = document.getElementById('hoursColumn');
+            const minutesColumn = document.getElementById('minutesColumn');
             
             // Генерация часов (0-23)
             for (let h = 0; h < 24; h++) {
@@ -454,7 +454,7 @@
                 hourBtn.style.cssText = 'padding: 8px; text-align: center; background: #f0f0f0; border-radius: 4px; cursor: pointer; user-select: none;';
                 hourBtn.addEventListener('click', function() {
                     // Снимаем выделение с других часов
-                    document.querySelectorAll('#hoursGrid div').forEach(el => el.style.background = '#f0f0f0');
+                    document.querySelectorAll('#hoursColumn div').forEach(el => el.style.background = '#f0f0f0');
                     // Выделяем выбранный час
                     hourBtn.style.background = '#4CAF50';
                     hourBtn.style.color = 'white';
@@ -464,7 +464,7 @@
                         applyTimeSelection();
                     }
                 });
-                hoursGrid.appendChild(hourBtn);
+                hoursColumn.appendChild(hourBtn);
             }
             
             // Генерация минут (0-55 с шагом 5)
@@ -474,7 +474,7 @@
                 minuteBtn.style.cssText = 'padding: 8px; text-align: center; background: #f0f0f0; border-radius: 4px; cursor: pointer; user-select: none;';
                 minuteBtn.addEventListener('click', function() {
                     // Снимаем выделение с других минут
-                    document.querySelectorAll('#minutesGrid div').forEach(el => el.style.background = '#f0f0f0');
+                    document.querySelectorAll('#minutesColumn div').forEach(el => el.style.background = '#f0f0f0');
                     // Выделяем выбранную минуту
                     minuteBtn.style.background = '#4CAF50';
                     minuteBtn.style.color = 'white';
@@ -484,7 +484,7 @@
                         applyTimeSelection();
                     }
                 });
-                minutesGrid.appendChild(minuteBtn);
+                minutesColumn.appendChild(minuteBtn);
             }
         }
         
@@ -493,34 +493,47 @@
             const timePickerModal = document.getElementById('timePickerModal');
             const eventStartInput = document.getElementById('eventStart');
             
-            // Сбрасываем предыдущий выбор
-            selectedHour = null;
-            selectedMinute = null;
-            document.querySelectorAll('#hoursGrid div, #minutesGrid div').forEach(el => {
-                el.style.background = '#f0f0f0';
-                el.style.color = 'black';
-            });
+            // Сбрасываем предыдущий выбор только если поле пустое
+            const hasExistingValue = eventStartInput.value.trim() !== '';
             
-            // Если уже есть время в поле, предварительно выбираем его
-            if (eventStartInput.value) {
+            if (!hasExistingValue) {
+                // При первом открытии (пустое поле) сбрасываем выбор
+                selectedHour = null;
+                selectedMinute = null;
+                document.querySelectorAll('#hoursColumn div, #minutesColumn div').forEach(el => {
+                    el.style.background = '#f0f0f0';
+                    el.style.color = 'black';
+                });
+            } else {
+                // Если есть значение, оставляем его как выбранный
                 const parts = eventStartInput.value.split(':');
                 if (parts.length === 2) {
                     selectedHour = parts[0];
                     selectedMinute = parts[1];
-                    // Находим и выделяем соответствующие кнопки
-                    document.querySelectorAll('#hoursGrid div').forEach(el => {
-                        if (el.textContent === selectedHour) {
-                            el.style.background = '#4CAF50';
-                            el.style.color = 'white';
-                        }
-                    });
-                    document.querySelectorAll('#minutesGrid div').forEach(el => {
-                        if (el.textContent === selectedMinute) {
-                            el.style.background = '#4CAF50';
-                            el.style.color = 'white';
-                        }
-                    });
                 }
+            }
+            
+            // Если есть время в поле, предварительно выбираем его (визуально выделяем)
+            if (hasExistingValue && selectedHour && selectedMinute) {
+                // Находим и выделяем соответствующие кнопки
+                document.querySelectorAll('#hoursColumn div').forEach(el => {
+                    if (el.textContent === selectedHour) {
+                        el.style.background = '#4CAF50';
+                        el.style.color = 'white';
+                    } else {
+                        el.style.background = '#f0f0f0';
+                        el.style.color = 'black';
+                    }
+                });
+                document.querySelectorAll('#minutesColumn div').forEach(el => {
+                    if (el.textContent === selectedMinute) {
+                        el.style.background = '#4CAF50';
+                        el.style.color = 'white';
+                    } else {
+                        el.style.background = '#f0f0f0';
+                        el.style.color = 'black';
+                    }
+                });
             }
             
             timePickerModal.style.display = 'block';
