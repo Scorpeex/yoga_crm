@@ -390,12 +390,9 @@
                     }
                 }
                 
-                // Время начала - используем toLocaleTimeString для корректного отображения
-                const startTime = event.start.toLocaleTimeString('ru-RU', { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    hour12: false 
-                });
+                // Время начала - берем из ISO строки напрямую (часы и минуты)
+                const startIso = event.start.toISOString();
+                const startTime = startIso.slice(11, 16); // HH:MM в локальном времени
                 document.getElementById('eventStart').value = startTime;
                 
                 // Показываем дату
