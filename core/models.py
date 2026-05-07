@@ -40,6 +40,8 @@ class Hall(models.Model):
     name = models.CharField("Название зала", max_length=100)
     address = models.TextField("Адрес", blank=True)
     price_per_hour = models.DecimalField("Цена за час", max_digits=10, decimal_places=2, default=0)
+    color = models.CharField("Цвет в календаре", max_length=7, default="#3788d8", 
+                             help_text="Цвет в формате HEX (например, #3788d8)")
 
     class Meta:
         verbose_name = "Зал"
