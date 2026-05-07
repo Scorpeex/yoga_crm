@@ -53,6 +53,8 @@ def get_events(request):
             'start': local_dt.strftime('%Y-%m-%dT%H:%M:%S'),
             'end': (local_dt + timedelta(minutes=session.duration)).strftime('%Y-%m-%dT%H:%M:%S'),
             'allDay': False,
+            'backgroundColor': session.hall.color if session.hall else '#4ECDC4',
+            'borderColor': session.hall.color if session.hall else '#4ECDC4',
             'extendedProps': {
                 'hall_id': session.hall.id if session.hall else None,
                 'hall_name': session.hall.name if session.hall else '',

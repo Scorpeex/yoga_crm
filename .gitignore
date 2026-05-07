@@ -1,12 +1,63 @@
-__pycache__/
+```
+# Database
+db.sqlite3
+
+# Migrations
+core/migrations/*.py
+!core/migrations/__init__.py
+
+# Environment
+.env
+.env.local
+.env.*
 
 # Dependencies
+.venv/
 venv/
+node_modules/
 
-# Editor/IDE files
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.Python
+env/
+.venv/
+venv/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+*.pot
+*.po
+*~
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*.tmp
-*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+target/
+*.egg-info/
+```
