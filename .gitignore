@@ -1,14 +1,7 @@
-```gitignore
-# Compiled Python files
-*.pyc
 __pycache__/
 
 # Dependencies
 venv/
-.venv/
-.env
-.env.local
-*.env.*
 
 # Editor/IDE files
 .vscode/
@@ -16,12 +9,3 @@ venv/
 *.swp
 *.swo
 *.tmp
-
-# Logs
-*.log
-
-# Build artifacts
-build/
-dist/
-target/
-```
