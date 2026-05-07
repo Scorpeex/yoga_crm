@@ -42,14 +42,10 @@ def get_events(request):
     ).select_related('hall', 'class_type')
     
     events = []
-    moscow_tz = pytz.timezone('Europe/Moscow')
     
     for session in sessions:
-        # Конвертируем время в московский часовой пояс для отображения
-        if timezone.is_aware(session.date_time):
-            local_dt = session.date_time.astimezone(moscow_tz)
-        else:
-            local_dt = moscow_tz.localize(session.date_time)
+        # Время хранится как локальное (без timezone info), используем его напрямую
+        local_dt = session.date_time
         
         events.append({
             'id': str(session.id),
