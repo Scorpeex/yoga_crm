@@ -1,3 +1,40 @@
+<<<<<<< HEAD
+```
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+=======
 .pyc
 __pycache__/
 *.o
@@ -28,10 +65,15 @@ htmlcov/
 *.tmp
 *.swp
 *.swo
+>>>>>>> main
 
 # Environment
 .env
 .env.local
+<<<<<<< HEAD
+.env.
+```
+=======
 *.env.*
 
 # Editors
@@ -65,3 +107,4 @@ Thumbs.db
 *.tar.bz2
 *.tar.xz
 *.tar.zst
+>>>>>>> main
