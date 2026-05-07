@@ -390,8 +390,12 @@
                     }
                 }
                 
-                // Время начала
-                const startTime = event.start.toTimeString().slice(0, 5); // HH:MM
+                // Время начала - используем toLocaleTimeString для корректного отображения
+                const startTime = event.start.toLocaleTimeString('ru-RU', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                });
                 document.getElementById('eventStart').value = startTime;
                 
                 // Показываем дату
@@ -447,8 +451,8 @@
             const hoursColumn = document.getElementById('hoursColumn');
             const minutesColumn = document.getElementById('minutesColumn');
             
-            // Генерация часов (0-23)
-            for (let h = 0; h < 24; h++) {
+            // Генерация часов (08-20) - только рабочие часы студии
+            for (let h = 8; h <= 20; h++) {
                 const hourBtn = document.createElement('div');
                 hourBtn.textContent = h.toString().padStart(2, '0');
                 hourBtn.style.cssText = 'padding: 8px; text-align: center; background: #f0f0f0; border-radius: 4px; cursor: pointer; user-select: none;';
