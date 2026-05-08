@@ -3,6 +3,8 @@
 __pycache__/
 *.o
 *.obj
+dist/
+build/
 *.class
 *.exe
 *.dll
@@ -16,8 +18,6 @@ venv/
 node_modules/
 .mypy_cache/
 .pytest_cache/
-dist/
-build/
 target/
 .gradle/
 
