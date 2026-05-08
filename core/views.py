@@ -60,7 +60,9 @@ def get_events(request):
                 'hall_name': session.hall.name if session.hall else '',
                 'duration': session.duration,
                 'max_participants': session.max_participants,
-                'description': session.class_type.description if session.class_type.description else ''
+                'description': session.class_type.description if session.class_type.description else '',
+                'is_recurring': session.is_recurring,
+                'recurrence_id': session.recurrence_id or ''
             }
         })
     
@@ -77,6 +79,7 @@ def create_event(request):
         hall_id = data.get('hall_id')
         duration = data.get('duration')
         max_participants = data.get('max_participants', 20)
+        is_recurring = data.get('is_recurring', False)
         
         if not start:
             return JsonResponse({'error': 'Дата начала обязательна'}, status=400)
@@ -103,16 +106,39 @@ def create_event(request):
             duration=duration,
             hall=hall,
             max_participants=max_participants,
+            is_recurring=is_recurring,
         )
+        
+        # Если занятие повторяющееся, создаем события на 4 недели вперед
+        created_events = [{'id': session.id, 'title': session.class_type.name, 
+                          'start': session.date_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                          'end': (session.date_time + timedelta(minutes=session.duration)).strftime('%Y-%m-%dT%H:%M:%S')}]
+        
+        if is_recurring:
+            for week in range(1, 5):  # Создаем 4 повторения (итого 5 занятий включая первое)
+                new_date = date_time + timedelta(weeks=week)
+                recurring_session = ClassSession.objects.create(
+                    class_type=class_type,
+                    date_time=new_date,
+                    duration=duration,
+                    hall=hall,
+                    max_participants=max_participants,
+                    is_recurring=True,
+                    recurrence_id=session.recurrence_id,
+                )
+                created_events.append({
+                    'id': recurring_session.id,
+                    'title': recurring_session.class_type.name,
+                    'start': recurring_session.date_time.strftime('%Y-%m-%dT%H:%M:%S'),
+                    'end': (recurring_session.date_time + timedelta(minutes=recurring_session.duration)).strftime('%Y-%m-%dT%H:%M:%S'),
+                    'recurrence_id': recurring_session.recurrence_id,
+                    'is_recurring': True
+                })
         
         return JsonResponse({
             'success': True,
-            'event': {
-                'id': session.id,
-                'title': session.class_type.name,
-                'start': session.date_time.strftime('%Y-%m-%dT%H:%M:%S'),
-                'end': (session.date_time + timedelta(minutes=session.duration)).strftime('%Y-%m-%dT%H:%M:%S'),
-            }
+            'event': created_events[0],
+            'recurring_events': created_events if is_recurring else None
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
@@ -165,7 +191,29 @@ def delete_event(request, event_id):
     """Удаление занятия"""
     try:
         session = get_object_or_404(ClassSession, id=event_id)
-        session.delete()
+        
+        # Получаем данные о повторении перед удалением
+        is_recurring = session.is_recurring
+        recurrence_id = session.recurrence_id
+        
+        # Проверяем, нужно ли удалять только одно событие или всю серию
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+            delete_single = data.get('delete_single', False)
+        else:
+            delete_single = False
+        
+        if is_recurring and recurrence_id and not delete_single:
+            # Если это повторяющееся занятие и не выбрано удаление одного события,
+            # удаляем все последующие события этой серии
+            ClassSession.objects.filter(
+                recurrence_id=recurrence_id,
+                date_time__gte=session.date_time
+            ).delete()
+        else:
+            # Удаляем только одно событие
+            session.delete()
+            
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)

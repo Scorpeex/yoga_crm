@@ -1,32 +1,30 @@
 ```
-# Database
-db.sqlite3
-
-# Migrations
-core/migrations/*.py
-!core/migrations/__init__.py
-
-# Environment
-.env
-.env.local
-.env.*
-
-# Dependencies
-.venv/
-venv/
-node_modules/
-
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-*.so
-.Python
-env/
+*.py~
+*.py.class
+*.pyc.class
+
+# Databases
+*.sqlite3
+*.db
+*.db-journal
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Dependencies
 .venv/
 venv/
+env/
 ENV/
 pip-log.txt
 pip-delete-this-directory.txt
@@ -38,26 +36,34 @@ nosetests.xml
 coverage.xml
 *.cover
 *.log
-*.pot
-*.po
-*~
-.pytest_cache/
-.mypy_cache/
-.hypothesis/
+.DS_Store
+Thumbs.db
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# OS
-.DS_Store
-Thumbs.db
+# Environment
+.env
+.env.local
+.env.*
+!.env.example
 
-# Build
+# Testing
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+.coverage*
+coverage/
+htmlcov/
+
+# Distribution
 dist/
 build/
-target/
+*.egg
 *.egg-info/
+MANIFEST
 ```
