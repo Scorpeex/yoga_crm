@@ -228,6 +228,13 @@
                     <input type="number" id="eventMaxParticipants" value="20" min="1">
                 </div>
                 
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="eventRecurring" style="width: auto;">
+                        <span>Повторять каждую неделю (на 4 недели)</span>
+                    </label>
+                </div>
+                
                 <div class="button-group">
                     <button type="submit" class="btn btn-primary">Сохранить</button>
                     <button type="button" id="deleteBtn" class="btn btn-danger" style="display: none;">Удалить</button>
@@ -401,6 +408,19 @@
                 document.getElementById('eventDuration').value = event.extendedProps.duration || 60;
                 document.getElementById('eventMaxParticipants').value = event.extendedProps.max_participants || 20;
                 document.getElementById('eventHall').value = event.extendedProps.hall_id || '';
+                
+                // Повторяющееся событие
+                const isRecurring = event.extendedProps.is_recurring || false;
+                document.getElementById('eventRecurring').checked = isRecurring;
+                // Для повторяющихся событий показываем специальный текст при удалении
+                if (isRecurring) {
+                    deleteBtn.setAttribute('data-is-recurring', 'true');
+                    deleteBtn.setAttribute('data-recurrence-id', event.extendedProps.recurrence_id || '');
+                } else {
+                    deleteBtn.removeAttribute('data-is-recurring');
+                    deleteBtn.removeAttribute('data-recurrence-id');
+                }
+                
                 deleteBtn.style.display = 'inline-block';
             } else {
                 // Создание нового события
@@ -428,6 +448,9 @@
                 document.getElementById('eventDuration').value = 60;
                 document.getElementById('eventMaxParticipants').value = 20;
                 document.getElementById('eventHall').value = '';
+                document.getElementById('eventRecurring').checked = false;
+                deleteBtn.removeAttribute('data-is-recurring');
+                deleteBtn.removeAttribute('data-recurrence-id');
                 deleteBtn.style.display = 'none';
             }
             
@@ -569,6 +592,7 @@
                 duration: parseInt(document.getElementById('eventDuration').value),
                 hall_id: document.getElementById('eventHall').value || null,
                 max_participants: parseInt(document.getElementById('eventMaxParticipants').value),
+                is_recurring: document.getElementById('eventRecurring').checked,
             };
             
             // Если создаем новое событие, используем дату из клика по календарю
@@ -644,6 +668,52 @@
         }
         
         function deleteEvent(eventId) {
+            // Проверяем, является ли событие повторяющимся
+            const deleteBtn = document.getElementById('deleteBtn');
+            const isRecurring = deleteBtn.getAttribute('data-is-recurring') === 'true';
+            
+            if (isRecurring) {
+                // Спрашиваем пользователя, что удалять
+                const choice = confirm(
+                    'Это повторяющееся занятие.\n\n' +
+                    'Нажмите OK, чтобы удалить это и все последующие занятия серии.\n' +
+                    'Нажмите Отмена, чтобы удалить только это занятие.'
+                );
+                
+                if (choice === false) {
+                    // Пользователь выбрал "Отмена" - удаляем только одно занятие
+                    // Отправляем специальный флаг на сервер
+                    fetch(`/api/calendar/events/${eventId}/delete/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrftoken')
+                        },
+                        body: JSON.stringify({ delete_single: true })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            calendar.refetchEvents();
+                            closeModal();
+                        } else {
+                            alert('Ошибка при удалении: ' + (data.error || 'Неизвестная ошибка'));
+                        }
+                    })
+                    .catch(error => {
+                        alert('Ошибка при удалении: ' + error);
+                    });
+                } else {
+                    // Пользователь выбрал "OK" - удаляем все последующие (стандартное поведение)
+                    performDelete(eventId);
+                }
+            } else {
+                // Обычное удаление для не повторяющихся событий
+                performDelete(eventId);
+            }
+        }
+        
+        function performDelete(eventId) {
             fetch(`/api/calendar/events/${eventId}/delete/`, {
                 method: 'POST',
                 headers: {

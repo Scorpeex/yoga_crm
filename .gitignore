@@ -2,62 +2,49 @@
 # Database
 db.sqlite3
 
-# Migrations
-core/migrations/*.py
-!core/migrations/__init__.py
+# Dependencies
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
 # Environment
 .env
 .env.local
 .env.*
 
-# Dependencies
-.venv/
-venv/
-node_modules/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
-.Python
-env/
-.venv/
-venv/
-ENV/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
+# Logs
 *.log
-*.pot
-*.po
-*~
+
+# Coverage
+.coverage
+coverage/
+htmlcov/
+
+# Testing
 .pytest_cache/
 .mypy_cache/
-.hypothesis/
+
+# Compiled Python
+*.so
+*.dylib
+*.dll
+
+# Backup files
+*.bak
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Build
+# Build artifacts
 dist/
 build/
-target/
 *.egg-info/
 ```
