@@ -15,7 +15,6 @@ requirements/*.txt
 *.log
 *.tmp
 *.swp
-=======
 *.swo
 
 # Environment
@@ -34,3 +33,5 @@ nbproject/
 .DS_Store
 Thumbs.db
 ehthumbs.db
+Icon?
+```
