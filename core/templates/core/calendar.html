@@ -152,6 +152,108 @@
             font-size: 12px;
             margin-left: 5px;
         }
+
+        /* Стили для модального окна подтверждения удаления */
+        .delete-confirm-modal {
+            display: none;
+            position: fixed;
+            z-index: 1002;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .delete-confirm-content {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            width: 400px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .delete-confirm-content h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .delete-options {
+            text-align: left;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .delete-option {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .delete-option:hover {
+            background-color: #f9f9f9;
+            border-color: #4ECDC4;
+        }
+
+        .delete-option input[type="radio"] {
+            margin-right: 12px;
+            transform: scale(1.2);
+            accent-color: #4ECDC4;
+        }
+
+        .delete-option label {
+            cursor: pointer;
+            flex: 1;
+            font-size: 14px;
+            color: #555;
+            margin: 0;
+        }
+
+        .delete-confirm-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .delete-confirm-buttons button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .btn-delete-confirm {
+            background-color: #ff6b6b;
+            color: white;
+        }
+
+        .btn-delete-confirm:hover {
+            background-color: #ff5252;
+        }
+
+        .btn-close-delete {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-close-delete:hover {
+            background-color: #d0d0d0;
+        }
     </style>
 </head>
 <body>
@@ -241,6 +343,28 @@
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения удаления -->
+    <div id="deleteConfirmModal" class="delete-confirm-modal">
+        <div class="delete-confirm-content">
+            <h3>Удаление повторяющегося занятия</h3>
+            <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Выберите, какие занятия нужно удалить:</p>
+            <div class="delete-options">
+                <div class="delete-option" onclick="selectDeleteOption('single')">
+                    <input type="radio" id="deleteSingle" name="deleteOption" value="single">
+                    <label for="deleteSingle">Удалить только это занятие</label>
+                </div>
+                <div class="delete-option" onclick="selectDeleteOption('future')">
+                    <input type="radio" id="deleteFuture" name="deleteOption" value="future">
+                    <label for="deleteFuture">Удалить это и все последующие занятия</label>
+                </div>
+            </div>
+            <div class="delete-confirm-buttons">
+                <button type="button" class="btn-close-delete" onclick="closeDeleteModal()">Отмена</button>
+                <button type="button" class="btn-delete-confirm" onclick="confirmDelete()">Удалить</button>
+            </div>
         </div>
     </div>
 
@@ -346,9 +470,9 @@
                 saveEvent();
             };
             
-            // Удаление события
+            // Удаление события - открываем модальное окно для повторяющихся событий
             document.getElementById('deleteBtn').onclick = function() {
-                if (currentEventId && confirm('Вы уверены, что хотите удалить это занятие?')) {
+                if (currentEventId) {
                     deleteEvent(currentEventId);
                 }
             };
@@ -673,6 +797,7 @@
             const isRecurring = deleteBtn.getAttribute('data-is-recurring') === 'true';
             
             if (isRecurring) {
+<<<<<<< HEAD
                 // Спрашиваем пользователя, что удалять
                 const choice = confirm(
                     'Это повторяющееся занятие.\n\n' +
@@ -707,12 +832,77 @@
                     // Пользователь выбрал "OK" - удаляем все последующие (стандартное поведение)
                     performDelete(eventId);
                 }
+=======
+                // Открываем модальное окно с выбором опций удаления
+                openDeleteModal(eventId);
+>>>>>>> 2235539f1a40ab3ccb33a8f9e3eef1f687f0dace
             } else {
                 // Обычное удаление для не повторяющихся событий
                 performDelete(eventId);
             }
         }
         
+<<<<<<< HEAD
+=======
+        // Переменная для хранения ID события при удалении
+        let eventToDeleteId = null;
+        
+        // Открытие модального окна подтверждения удаления
+        function openDeleteModal(eventId) {
+            eventToDeleteId = eventId;
+            // Сбрасываем выбор на первую опцию
+            document.getElementById('deleteSingle').checked = true;
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+        }
+        
+        // Закрытие модального окна подтверждения удаления
+        function closeDeleteModal() {
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+            eventToDeleteId = null;
+        }
+        
+        // Выбор опции удаления (клик по строке)
+        function selectDeleteOption(option) {
+            document.getElementById('delete' + option.charAt(0).toUpperCase() + option.slice(1)).checked = true;
+        }
+        
+        // Подтверждение удаления
+        function confirmDelete() {
+            if (!eventToDeleteId) return;
+            
+            const deleteSingle = document.getElementById('deleteSingle').checked;
+            
+            if (deleteSingle) {
+                // Удаляем только одно занятие
+                fetch(`/api/calendar/events/${eventToDeleteId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ delete_single: true })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        calendar.refetchEvents();
+                        closeModal();
+                        closeDeleteModal();
+                    } else {
+                        alert('Ошибка при удалении: ' + (data.error || 'Неизвестная ошибка'));
+                    }
+                })
+                .catch(error => {
+                    alert('Ошибка при удалении: ' + error);
+                });
+            } else {
+                // Удаляем все последующие занятия
+                performDelete(eventToDeleteId);
+                closeDeleteModal();
+            }
+        }
+        
+>>>>>>> 2235539f1a40ab3ccb33a8f9e3eef1f687f0dace
         function performDelete(eventId) {
             fetch(`/api/calendar/events/${eventId}/delete/`, {
                 method: 'POST',

@@ -1,8 +1,14 @@
+<<<<<<< HEAD
 # Dependencies
+=======
+```
+# Python
+>>>>>>> 2235539f1a40ab3ccb33a8f9e3eef1f687f0dace
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+<<<<<<< HEAD
 
 # Environment
 .env
@@ -32,15 +38,75 @@ htmlcov/
 *.swo
 
 # OS generated files
+=======
+*.py~
+*.py.class
+*.pyc.class
+
+# Databases
+*.sqlite3
+*.db
+*.db-journal
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Dependencies
+.venv/
+venv/
+env/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+>>>>>>> 2235539f1a40ab3ccb33a8f9e3eef1f687f0dace
 .DS_Store
 Thumbs.db
 
 # IDE
 .vscode/
 .idea/
+<<<<<<< HEAD
 
 # Build artifacts
 dist/
 build/
+=======
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*
+!.env.example
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+.coverage*
+coverage/
+htmlcov/
+
+# Distribution
+dist/
+build/
+*.egg
+>>>>>>> 2235539f1a40ab3ccb33a8f9e3eef1f687f0dace
 *.egg-info/
+MANIFEST
 ```
