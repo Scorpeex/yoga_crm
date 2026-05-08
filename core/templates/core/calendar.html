@@ -334,7 +334,10 @@
                     day: 'День',
                     list: 'Список'
                 },
-                events: '/api/calendar/events/',
+                events: {
+                    url: '/api/calendar/events/',
+                    // FullCalendar автоматически передаст start и end параметры
+                },
                 editable: true,
                 selectable: true,
                 selectMirror: true,

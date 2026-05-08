@@ -19,22 +19,41 @@ def calendar_view(request):
 
 def get_events(request):
     """Получение событий для календаря (JSON)"""
-    year = request.GET.get('year', timezone.now().year)
-    month = request.GET.get('month', timezone.now().month)
+    # Получаем параметры периода от FullCalendar
+    start_param = request.GET.get('start')
+    end_param = request.GET.get('end')
     
-    try:
-        year = int(year)
-        month = int(month)
-    except (ValueError, TypeError):
-        year = timezone.now().year
-        month = timezone.now().month
-    
-    # Первый и последний день месяца
-    start_date = datetime(year, month, 1)
-    if month == 12:
-        end_date = datetime(year + 1, 1, 1) - timedelta(days=1)
+    if start_param and end_param:
+        # Используем параметры от FullCalendar (ISO формат даты)
+        try:
+            start_date = datetime.fromisoformat(start_param.replace('Z', '+00:00')).replace(tzinfo=None)
+            end_date = datetime.fromisoformat(end_param.replace('Z', '+00:00')).replace(tzinfo=None)
+        except (ValueError, TypeError):
+            # Fallback на текущий месяц при ошибке парсинга
+            now = timezone.now()
+            start_date = datetime(now.year, now.month, 1)
+            if now.month == 12:
+                end_date = datetime(now.year + 1, 1, 1) - timedelta(days=1)
+            else:
+                end_date = datetime(now.year, now.month + 1, 1) - timedelta(days=1)
     else:
-        end_date = datetime(year, month + 1, 1) - timedelta(days=1)
+        # Fallback на параметры year/month если start/end не переданы
+        year = request.GET.get('year', timezone.now().year)
+        month = request.GET.get('month', timezone.now().month)
+        
+        try:
+            year = int(year)
+            month = int(month)
+        except (ValueError, TypeError):
+            year = timezone.now().year
+            month = timezone.now().month
+        
+        # Первый и последний день месяца
+        start_date = datetime(year, month, 1)
+        if month == 12:
+            end_date = datetime(year + 1, 1, 1) - timedelta(days=1)
+        else:
+            end_date = datetime(year, month + 1, 1) - timedelta(days=1)
     
     sessions = ClassSession.objects.filter(
         date_time__gte=start_date,
