@@ -2,51 +2,35 @@
 # Compiled and build artifacts
 *.pyc
 __pycache__/
-*.o
-*.obj
-dist/
-build/
 
 # Dependencies
 .venv/
 venv/
 node_modules/
+pip-log.txt
+pipenv.lock
+requirements/*.txt
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
+=======
+*.swo
 
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
 # Editors
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace
+nbproject/
 
-# Coverage reports
-.coverage
-coverage/
-htmlcov/
-
-# Python specific
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
-*.egg-info/
-.eggs/
-
-# Django specific
-*.log
-local_settings.py
-db.sqlite3
-media/
-staticfiles/
-
-# Original rules preserved
-*.log
-```
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
