@@ -1,25 +1,37 @@
-```gitignore
+```
 # Compiled and build artifacts
-*.css.map
-*.min.css
-*.min.js
-*.bundle.js
-dist/
-build/
+*.pyc
+__pycache__/
 
 # Dependencies
+.venv/
+venv/
 node_modules/
+pip-log.txt
+pipenv.lock
+requirements/*.txt
 
 # Logs and temp files
 *.log
 *.tmp
-
-# Editors
-.vscode/
-.idea/
+*.swp
+*.swo
 
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
+
+# Editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+nbproject/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
 ```
