@@ -69,6 +69,8 @@ class ClassSession(models.Model):
     duration = models.PositiveIntegerField("Длительность (мин)", default=60)
     hall = models.ForeignKey(Hall, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Зал")
     max_participants = models.PositiveIntegerField("Макс. участников", default=20)
+    is_recurring = models.BooleanField("Повторять каждую неделю", default=False)
+    recurrence_id = models.CharField("ID серии повторений", max_length=50, blank=True, db_index=True)
 
     class Meta:
         verbose_name = "Занятие"
@@ -82,6 +84,10 @@ class ClassSession(models.Model):
         # Автоматически устанавливаем длительность из типа занятия, если не указана явно
         if not self.duration and self.class_type:
             self.duration = self.class_type.duration_minutes
+        # Если is_recurring=True, но recurrence_id не задан, генерируем его
+        if self.is_recurring and not self.recurrence_id:
+            import uuid
+            self.recurrence_id = str(uuid.uuid4())
         super().save(*args, **kwargs)
 
 
