@@ -34,11 +34,13 @@ h1 {
 .fc-event {
     cursor: pointer;
     border-width: 1px !important;
+    /* Убираем прозрачность и позволяем backgroundColor работать */
+    opacity: 1 !important;
 }
 
-/* Принудительное применение backgroundColor из данных события */
-.fc-event .fc-event-main {
-    background-color: inherit !important;
+/* Убираем внутренние элементы, которые могут перекрывать фон */
+.fc-event .fc-event-main-frame {
+    background-color: transparent !important;
 }
 
 /* Стили для модальных окон */
