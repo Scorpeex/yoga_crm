@@ -231,9 +231,10 @@ function openModal(event, startStr) {
             }
         }
         
-        // Время начала - берем из ISO строки напрямую (часы и минуты)
-        const startIso = event.start.toISOString();
-        const startTime = startIso.slice(11, 16); // HH:MM в локальном времени
+        // Время начала - берем локальные часы и минуты напрямую, чтобы избежать проблем с timezone
+        const startHours = event.start.getHours().toString().padStart(2, '0');
+        const startMinutes = event.start.getMinutes().toString().padStart(2, '0');
+        const startTime = `${startHours}:${startMinutes}`;
         document.getElementById('eventStart').value = startTime;
         
         // Показываем дату
