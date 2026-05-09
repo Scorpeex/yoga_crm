@@ -1,18 +1,12 @@
 ```
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
 # Compiled and build artifacts
+*.pyc
+__pycache__/
 *.o
 *.obj
-*.so
-*.a
-*.dll
-*.exe
-*.out
+dist/
+build/
+target/
 
 # Dependencies
 .venv/
@@ -20,9 +14,6 @@ venv/
 node_modules/
 .mypy_cache/
 .pytest_cache/
-dist/
-build/
-target/
 .gradle/
 
 # Logs and temp files
@@ -68,8 +59,4 @@ htmlcov/
 *.Z
 *.lz
 *.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
 ```
