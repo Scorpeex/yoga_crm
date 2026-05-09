@@ -33,26 +33,14 @@ h1 {
 
 .fc-event {
     cursor: pointer;
-    border: none !important;
+    border-width: 1px !important;
+    /* Убираем прозрачность и позволяем backgroundColor работать */
     opacity: 1 !important;
 }
 
-/* Ключевое изменение: применяем фон к обертке события */
-.fc-daygrid-event-harness {
-    /* Фон будет устанавливаться через JS напрямую в style атрибут */
-}
-
-/* Убираем внутренние рамки и фоны, чтобы не перекрывали цвет */
-.fc-event .fc-event-main-frame,
-.fc-event .fc-event-main {
+/* Убираем внутренние элементы, которые могут перекрывать фон */
+.fc-event .fc-event-main-frame {
     background-color: transparent !important;
-    border: none !important;
-}
-
-/* Для блочных событий (месячный вид) */
-.fc-daygrid-block-event {
-    background-color: inherit !important;
-    border: none !important;
 }
 
 /* Стили для модальных окон */
