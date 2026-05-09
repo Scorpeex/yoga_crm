@@ -27,6 +27,14 @@ document.addEventListener('DOMContentLoaded', function() {
             url: '/api/calendar/events/',
             // FullCalendar автоматически передаст start и end параметры
         },
+        // Применяем цвет фона к обертке события для полного закрашивания
+        eventDidMount: function(info) {
+            // Находим обертку события и применяем backgroundColor напрямую
+            const harness = info.el.closest('.fc-daygrid-event-harness');
+            if (harness && info.event.backgroundColor) {
+                harness.style.backgroundColor = info.event.backgroundColor;
+            }
+        },
         editable: true,
         selectable: true,
         selectMirror: true,
