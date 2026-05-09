@@ -2,6 +2,7 @@
 let calendar;
 let currentEventId = null;
 let selectedDateFromClick = null; // Сохраняем дату из клика по календарю
+let currentSessionId = null; // ID текущей сессии для управления посещаемостью
 
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
@@ -166,7 +167,34 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('eventDuration').value = duration;
         }
     });
+    
+    // Обработчики вкладок
+    initTabs();
 });
+
+// Инициализация вкладок
+function initTabs() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            
+            // Убираем активный класс со всех кнопок и панелей
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            
+            // Добавляем активный класс текущей кнопке и панели
+            this.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            
+            // Если переключились на вкладку посещаемости и есть ID сессии - загружаем данные
+            if (tabId === 'attendance-tab' && currentSessionId) {
+                loadAttendance(currentSessionId);
+            }
+        });
+    });
+}
 
 function openModal(event, startStr) {
     const modal = document.getElementById('eventModal');
@@ -187,6 +215,7 @@ function openModal(event, startStr) {
     if (event) {
         // Редактирование существующего события
         currentEventId = event.id;
+        currentSessionId = event.id; // Сохраняем ID сессии для посещаемости
         modalTitle.textContent = 'Редактировать занятие';
         document.getElementById('eventId').value = event.id;
         
@@ -230,6 +259,7 @@ function openModal(event, startStr) {
     } else {
         // Создание нового события
         currentEventId = null;
+        currentSessionId = null; // Нет сессии для нового события
         modalTitle.textContent = 'Новое занятие';
         document.getElementById('eventId').value = '';
         document.getElementById('eventClassType').value = '';
@@ -265,6 +295,11 @@ function openModal(event, startStr) {
 function closeModal() {
     document.getElementById('eventModal').style.display = 'none';
     document.getElementById('eventForm').reset();
+    // Сбрасываем вкладки на первую
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelector('.tab-btn[data-tab="class-tab"]').classList.add('active');
+    document.getElementById('class-tab').classList.add('active');
 }
 
 // Переменные для кастомного выбора времени
@@ -569,4 +604,199 @@ function getCookie(name) {
         }
     }
     return cookieValue;
+}
+
+// ==================== ФУНКЦИИ ПОСЕЩАЕМОСТИ ====================
+
+// Загрузка списка посещаемости для занятия
+function loadAttendance(sessionId) {
+    const attendanceContent = document.getElementById('attendanceContent');
+    attendanceContent.innerHTML = '<p style="text-align: center; color: #666;">Загрузка...</p>';
+    
+    fetch(`/api/calendar/events/${sessionId}/attendance/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderAttendanceList(data.attendances);
+            } else {
+                attendanceContent.innerHTML = `<p style="color: red;">Ошибка: ${data.error}</p>`;
+            }
+        })
+        .catch(error => {
+            attendanceContent.innerHTML = `<p style="color: red;">Ошибка при загрузке: ${error}</p>`;
+        });
+}
+
+// Рендеринг списка посещаемости
+function renderAttendanceList(attendances) {
+    const attendanceContent = document.getElementById('attendanceContent');
+    
+    let html = '';
+    
+    // Список записанных клиентов
+    html += '<div class="attendance-list">';
+    html += '<h4 style="margin-bottom: 10px; color: #555;">Записанные клиенты</h4>';
+    
+    if (attendances.length === 0) {
+        html += '<p style="color: #999; font-style: italic;">Пока нет записанных клиентов</p>';
+    } else {
+        attendances.forEach(attendance => {
+            html += `
+                <div class="attendance-item">
+                    <input type="checkbox" id="client-${attendance.client_id}" 
+                           data-client-id="${attendance.client_id}" 
+                           ${attendance.attended ? 'checked' : ''}>
+                    <label for="client-${attendance.client_id}">
+                        <span class="client-name">${attendance.client_name}</span>
+                        ${attendance.client_phone ? `<span class="client-phone">${attendance.client_phone}</span>` : ''}
+                    </label>
+                </div>
+            `;
+        });
+    }
+    
+    html += '</div>';
+    
+    // Кнопка сохранения посещаемости
+    html += `
+        <div class="attendance-actions">
+            <button type="button" class="btn btn-primary" onclick="saveAttendance()">Сохранить посещаемость</button>
+        </div>
+    `;
+    
+    // Секция добавления клиента вручную
+    html += `
+        <div class="add-client-section">
+            <h4>Добавить клиента вручную</h4>
+            <div class="client-search">
+                <input type="text" id="clientSearchInput" placeholder="Поиск по имени или телефону..." oninput="searchClients(this.value)">
+                <button type="button" class="btn btn-secondary btn-small" onclick="closeSearchResults()">✕</button>
+            </div>
+            <div id="clientSearchResults" class="client-search-results"></div>
+        </div>
+    `;
+    
+    attendanceContent.innerHTML = html;
+}
+
+// Поиск клиентов
+let searchTimeout = null;
+function searchClients(query) {
+    const resultsDiv = document.getElementById('clientSearchResults');
+    
+    // Очищаем предыдущий таймер
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+    }
+    
+    if (!query || query.length < 2) {
+        resultsDiv.style.display = 'none';
+        resultsDiv.innerHTML = '';
+        return;
+    }
+    
+    // Задержка перед запросом для избежания частых запросов
+    searchTimeout = setTimeout(() => {
+        fetch(`/api/clients/search/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.clients && data.clients.length > 0) {
+                    let html = '';
+                    data.clients.forEach(client => {
+                        html += `
+                            <div class="client-search-result-item" onclick="addClientToSession(${client.id})">
+                                <strong>${client.name}</strong>
+                                ${client.phone ? `<br><small>${client.phone}</small>` : ''}
+                            </div>
+                        `;
+                    });
+                    resultsDiv.innerHTML = html;
+                    resultsDiv.style.display = 'block';
+                } else {
+                    resultsDiv.innerHTML = '<div class="client-search-result-item" style="color: #999;">Клиенты не найдены</div>';
+                    resultsDiv.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                resultsDiv.innerHTML = `<div class="client-search-result-item" style="color: red;">Ошибка: ${error}</div>`;
+                resultsDiv.style.display = 'block';
+            });
+    }, 300);
+}
+
+// Закрытие результатов поиска
+function closeSearchResults() {
+    const resultsDiv = document.getElementById('clientSearchResults');
+    const input = document.getElementById('clientSearchInput');
+    resultsDiv.style.display = 'none';
+    resultsDiv.innerHTML = '';
+    input.value = '';
+}
+
+// Добавление клиента на занятие
+function addClientToSession(clientId) {
+    if (!currentSessionId) {
+        alert('Сначала сохраните занятие');
+        return;
+    }
+    
+    fetch(`/api/calendar/events/${currentSessionId}/attendance/add/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ client_id: clientId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Перезагружаем список посещаемости
+            loadAttendance(currentSessionId);
+            closeSearchResults();
+        } else {
+            alert(`Ошибка: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        alert(`Ошибка при добавлении: ${error}`);
+    });
+}
+
+// Сохранение посещаемости
+function saveAttendance() {
+    if (!currentSessionId) {
+        alert('Сначала сохраните занятие');
+        return;
+    }
+    
+    // Собираем ID клиентов, которые отметились как посетившие
+    const attendedClients = [];
+    document.querySelectorAll('.attendance-item input[type="checkbox"]').forEach(checkbox => {
+        if (checkbox.checked) {
+            attendedClients.push(parseInt(checkbox.getAttribute('data-client-id')));
+        }
+    });
+    
+    fetch(`/api/calendar/events/${currentSessionId}/attendance/update/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({ attended_clients: attendedClients })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Посещаемость сохранена');
+            // Перезагружаем список для обновления статусов
+            loadAttendance(currentSessionId);
+        } else {
+            alert(`Ошибка: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        alert(`Ошибка при сохранении: ${error}`);
+    });
 }

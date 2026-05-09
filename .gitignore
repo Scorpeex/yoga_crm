@@ -1,23 +1,16 @@
+```gitignore
 # Compiled and build artifacts
 *.pyc
 __pycache__/
-*.o
-*.obj
-*.class
-*.exe
-*.a
-*.out
 
 # Dependencies
 .venv/
 venv/
 node_modules/
-.mypy_cache/
-.pytest_cache/
+*.egg-info/
 dist/
 build/
 target/
-.gradle/
 
 # Logs and temp files
 *.log
@@ -33,21 +26,158 @@ target/
 # Editors
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS generated files
+# OS
 .DS_Store
 Thumbs.db
 
 # Coverage
+.coverage
 coverage/
 htmlcov/
-.coverage
 
-# Compressed files
+# Python specific
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.db
+*.sqlite
+*.sqlite3
+
+# Web specific
+*.min.js
+*.min.css
+public/dist/
+staticfiles/
+media/
+
+# Backup files
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+#*\#
+CRASHES/
+server.log
+*.dir-locals.el
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# Package manager
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vs/
+.settings/
+.project
+.pydevproject
+.spyproject
+.well-known/
+nbproject/
+*.launch
+.classpath
+.factorypath
+
+# System
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Icon?
+Thumbs.db
+*:*
+*.DS_Store
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Icon?
+Thumbs.db
+
+# Distribution / packaging
+.Python
+env/
+venv/
+ENV/
+.venv/
+env.bak/
+venv.bak/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+.eggs/*
+.installed.cfg
+*.egg
+
+# Documentation
+docs/_build/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Local configuration files
+local.properties
+local-config.json
+config.local.json
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Compiled and binary files
+*.exe
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+*.out
+*.a
+*.lib
+
+# Archives
 *.zip
-*.gz
 *.tar
-*.tgz
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.gz
 *.bz2
 *.xz
 *.7z
@@ -62,7 +192,576 @@ htmlcov/
 *.Z
 *.lz
 *.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+
+# IDE specific
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/recommendations.json
+.idea/workspace.xml
+.idea/modules.xml
+.idea/vcs.xml
+*.iml
+*.iws
+*.ipr
+nbproject/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
+.grunt
+
+# Bower dependency directory (https://bower.io/)
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons (https://nodejs.org/api/addons.html)
+build/Release
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# TypeScript v1 declaration files
+typings/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+.env.test
+.env.production
+.env.local
+
+# next.js build output
+.next/
+
+# nuxt.js build output
+.nuxt/
+
+# vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn global folder
+.yarn-cache
+
+# JetBrains IDEs
+*.iws
+*.iml
+*.ipr
+.idea/
+
+# Eclipse
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+
+# Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.manifest
+install_manifest.txt
+compile_commands.json
+
+# Visual Studio Code
+.vscode/
+
+# Python virtual env in project root
+.env/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask
+instance/
+.webassets-cache
+
+# Scrapy
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Coverage
+htmlcov/
+.tox/
+.nox/
+.coverage*/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# Flask
+instance/
+.webassets-cache
+
+# Webpack
+webpack-stats.json
+
+# Jinja cache
+jinja2/
+
+# Flask-SQLAlchemy
+*.db
+*.db-journal
+
+# Celery beat schedule
+celerybeat-schedule
+
+# Sage
+*.sage.py
+
+# Linting
+.eslintcache
+.jscsrc
+.jshintrc
+.fishrc
+
+# Assets
+/public/
+
+# React
+build/
+*.tsbuildinfo
+.next/
+out/
+dist/
+node_modules/
+
+# Vue
+dist/
+node_modules/
+*.tsbuildinfo
+
+# Angular
+dist/
+node_modules/
+*.tsbuildinfo
+
+# Ember
+dist/
+tmp/
+node_modules/
+
+# Gatsby
+public/
+.cache/
+node_modules/
+
+# Next.js
+.next/
+out/
+node_modules/
+
+# Nuxt.js
+.nuxt/
+dist/
+node_modules/
+
+# Svelte
+node_modules/
+build/
+package-lock.json
+
+# Gridsome
+dist/
+node_modules/
+
+# Ionic
+node_modules/
+*.min.js
+*.min.css
+
+# Cordova
+node_modules/
+platforms/
+plugins/
+
+# Electron
+node_modules/
+dist/
+
+# Meteor
+.meteor/local
+
+# Ionic
+node_modules/
+ionic_*.json
+
+# Capacitor
+node_modules/
+capacitor.config.json
+
+# Stencil
+node_modules/
+dist/
+www/
+
+# Quasar
+node_modules/
+dist/
+.quasar/
+
+# NativeScript
+node_modules/
+platforms/
+hooks/
+
+# Expo
+node_modules/
+.expo/
+web-build/
+
+# React Native
+node_modules/
+*.apk
+*.aab
+*.ipa
+
+# Weex
+node_modules/
+dist/
+
+# NativeScript
+node_modules/
+platforms/
+hooks/
+
+# Taro
+node_modules/
+dist/
+
+# uni-app
+node_modules/
+unpackage/
+
+# HarmonyOS
+node_modules/
+hvigor/
+oh_modules/
+
+# Unity
+Library/
+Temp/
+Obj/
+Build/
+Logs/
+UserSettings/
+
+# Godot
+.import/
+.export/
+bin/
+.autoload_sources
+.godot/
+
+# Unreal Engine
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+*.uproject.user
+
+# CryEngine
+user.settings
+user.vcproj
+user.sln
+
+# GameMaker Studio
+*.yy
+*.yyp
+*.yyz
+*.yym
+
+# Construct 3
+*.c3project
+export/
+projectfiles/
+
+# Defold
+.build/
+lib/
+bin/
+*.appmanifest
+*.manifest
+
+# Lumberyard
+.aws/
+lumberyard/
+.code/
+.project/setting/
+
+# OpenFL
+export/
+ndll/
+*.swf
+*.swc
+
+# Stencyl
+game/
+logs/
+.stencyl
+
+# Build artifacts
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.out
+*.pyc
+*.pyo
+*.pyd
+*.jar
+*.war
+*.class
+*.psd
+*.ai
+*.sketch
+*.fig
+*.xd
+*.blend
+*.max
+*.ma
+*.mb
+*.fbx
+*.dae
+*.obj
+*.3ds
+*.c4d
+*.lwo
+*.lxo
+*.pdb
+*.ilk
+*.exp
+*.pch
+*.ilk
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.suo
+*.cache
+*.VC.db
+*.VC.VC.opendb
+*.user
+*.userosscache
+*.sln.docstates
+*.vcxproj.filters
+*.vcproj.filters
+*.VC.VC.opendb
+*.VC.db
+*.user
+*.userosscache
+*.suo
+*.sln.docstates
+*.vcxproj.filters
+*.vcproj.filters
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cache
+*.ilk
+*.exp
+*.pch
+*.pdb
+*.ipch
+*.iobj
+*.ipdb
+*.tlog
+*.res
+*.metagen
+*.metaxml
+*.ref
+*.ref.bin
+*.meta
+*.meta.bin
+*.asmdef
+*.rsp
+*.pidb
+*.pdb.meta
+*.mdb.meta
+*.asset.meta
+*.prefab.meta
+*.unity.meta
+*.mat.meta
+*.anim.meta
+*.controller.meta
+*.physicMaterial.meta
+*.physicsMaterial2D.meta
+*.prefab
+*.unity
+*.mat
+*.anim
+*.controller
+*.physicMaterial
+*.physicsMaterial2D
+*.guiconfig
+*.log
+*.meta
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+*.asset.meta
+*.prefab.meta
+*.unity.meta
+*.mat.meta
+*.anim.meta
+*.controller.meta
+*.physicMaterial.meta
+*.physicsMaterial2D.meta
+*.guiconfig.meta
+*.log.meta
+*.meta.meta
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+*.asset.meta
+*.prefab.meta
+*.unity.meta
+*.mat.meta
+*.anim.meta
+*.controller.meta
+*.physicMaterial.meta
+*.physicsMaterial2D.meta
+*.guiconfig.meta
+*.log.meta
+*.meta.meta
+```
