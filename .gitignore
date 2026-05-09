@@ -10,6 +10,7 @@ build/
 *.so
 *.dll
 *.exe
+*.a
 *.out
 
 # Dependencies
@@ -30,13 +31,11 @@ target/
 # Environment
 .env
 .env.local
-.env.*
+*.env.*
 
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # System files
 .DS_Store

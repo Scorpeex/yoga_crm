@@ -27,13 +27,23 @@ document.addEventListener('DOMContentLoaded', function() {
             url: '/api/calendar/events/',
             // FullCalendar автоматически передаст start и end параметры
         },
-        // Применяем цвет фона к обертке события для полного закрашивания
-        eventDidMount: function(info) {
-            // Находим обертку события и применяем backgroundColor напрямую
-            const harness = info.el.closest('.fc-daygrid-event-harness');
-            if (harness && info.event.backgroundColor) {
-                harness.style.backgroundColor = info.event.backgroundColor;
+        // Полная кастомизация рендеринга события - формат: "ЧЧ:ММ Название | Зал"
+        eventContent: function(info) {
+            const startTime = info.event.start.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            const className = info.event.title;
+            const hallName = info.event.extendedProps.hall_name || '';
+            
+            let displayText = className;
+            if (hallName) {
+                displayText = `${className} | ${hallName}`;
             }
+            
+            return {
+                html: `<div style="width: 100%; height: 100%; background-color: ${info.event.backgroundColor}; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px; padding: 2px; text-align: center;">
+                    <div style="font-size: 10px; opacity: 0.9;">${startTime}</div>
+                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${displayText}</div>
+                </div>`
+            };
         },
         editable: true,
         selectable: true,
