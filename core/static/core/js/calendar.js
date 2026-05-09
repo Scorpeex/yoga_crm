@@ -728,9 +728,9 @@ function searchClients(query) {
 function closeSearchResults() {
     const resultsDiv = document.getElementById('clientSearchResults');
     const input = document.getElementById('clientSearchInput');
-    resultsDiv.style.display = 'none';
-    resultsDiv.innerHTML = '';
-    input.value = '';
+    if (resultsDiv) resultsDiv.style.display = 'none';
+    if (resultsDiv) resultsDiv.innerHTML = '';
+    if (input) input.value = '';
 }
 
 // Добавление клиента на занятие
