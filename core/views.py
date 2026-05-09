@@ -9,27 +9,26 @@ from django.db.models import Q
 
 
 def parse_datetime_to_local(start_str):
-    """Конвертирует дату из FullCalendar (может быть в UTC) в локальное время"""
+    """Конвертирует дату из FullCalendar (может быть в UTC или с timezone) в локальное naive datetime"""
     if not start_str:
         return None
     
-    # Удаляем Z и +00:00 суффиксы
-    clean_str = start_str.replace('Z', '').replace('+00:00', '')
-    
     try:
-        dt = datetime.fromisoformat(clean_str)
+        # Парсим строку с помощью fromisoformat (поддерживает форматы с timezone)
+        dt = datetime.fromisoformat(start_str)
         
-        # Если строка содержала 'Z', значит это UTC время - конвертируем в локальное
-        if 'Z' in start_str or '+00:00' in start_str:
-            utc_dt = pytz.utc.localize(dt)
+        # Если дата timezone-aware, конвертируем в локальную зону и убираем tzinfo
+        if dt.tzinfo is not None:
             novosibirsk_tz = pytz.timezone('Asia/Novosibirsk')
-            local_dt = utc_dt.astimezone(novosibirsk_tz)
-            # Возвращаем naive datetime в локальной зоне
+            # Конвертируем в целевую часовую зону
+            local_dt = dt.astimezone(novosibirsk_tz)
+            # Возвращаем naive datetime (без tzinfo) для SQLite
             return local_dt.replace(tzinfo=None)
         else:
-            # Это уже локальное время (без timezone info)
+            # Это уже naive datetime, используем как есть
             return dt
-    except (ValueError, TypeError):
+    except (ValueError, TypeError) as e:
+        print(f"Ошибка парсинга даты {start_str}: {e}")
         return None
 
 

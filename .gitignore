@@ -1,11 +1,17 @@
 ```
-# Compiled and build artifacts
-*.pyc
+# Python
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Compiled and build artifacts
 *.o
 *.obj
-dist/
-build/
+*.so
+*.a
+*.dll
+*.exe
 *.out
 
 # Dependencies
@@ -14,6 +20,8 @@ venv/
 node_modules/
 .mypy_cache/
 .pytest_cache/
+dist/
+build/
 target/
 .gradle/
 
