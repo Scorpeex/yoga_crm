@@ -453,8 +453,17 @@ function saveEvent() {
     // Если создаем новое событие, используем дату из клика по календарю
     if (!eventId) {
         if (selectedDateFromClick) {
-            // selectedDateFromClick уже в правильном формате YYYY-MM-DDTHH:MM
-            data.start = selectedDateFromClick;
+            // selectedDateFromClick имеет формат YYYY-MM-DDTHH:MM
+            // Но нам нужно использовать время из поля eventStart, если оно было изменено
+            const timeFromInput = document.getElementById('eventStart').value;
+            if (timeFromInput) {
+                // Берем дату из selectedDateFromClick и время из input
+                const datePart = selectedDateFromClick.slice(0, 10); // YYYY-MM-DD
+                data.start = `${datePart}T${timeFromInput}`;
+            } else {
+                // Если время не выбрано, используем время из клика
+                data.start = selectedDateFromClick;
+            }
         } else {
             const today = new Date();
             // Используем локальную дату вместо UTC
