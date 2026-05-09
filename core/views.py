@@ -3,8 +3,34 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from datetime import datetime, timedelta
+import pytz
 from .models import ClassSession, Hall, ClassType, Client, Attendance
 from django.db.models import Q
+
+
+def parse_datetime_to_local(start_str):
+    """Конвертирует дату из FullCalendar (может быть в UTC) в локальное время"""
+    if not start_str:
+        return None
+    
+    # Удаляем Z и +00:00 суффиксы
+    clean_str = start_str.replace('Z', '').replace('+00:00', '')
+    
+    try:
+        dt = datetime.fromisoformat(clean_str)
+        
+        # Если строка содержала 'Z', значит это UTC время - конвертируем в локальное
+        if 'Z' in start_str or '+00:00' in start_str:
+            utc_dt = pytz.utc.localize(dt)
+            novosibirsk_tz = pytz.timezone('Asia/Novosibirsk')
+            local_dt = utc_dt.astimezone(novosibirsk_tz)
+            # Возвращаем naive datetime в локальной зоне
+            return local_dt.replace(tzinfo=None)
+        else:
+            # Это уже локальное время (без timezone info)
+            return dt
+    except (ValueError, TypeError):
+        return None
 
 
 def calendar_view(request):
@@ -23,8 +49,11 @@ def get_events(request):
     if start_param and end_param:
         # Используем параметры от FullCalendar (ISO формат даты)
         try:
-            start_date = datetime.fromisoformat(start_param.replace('Z', '').replace('+00:00', ''))
-            end_date = datetime.fromisoformat(end_param.replace('Z', '').replace('+00:00', ''))
+            # Конвертируем из UTC в локальное время для корректного фильтра
+            start_date = parse_datetime_to_local(start_param)
+            end_date = parse_datetime_to_local(end_param)
+            if not start_date or not end_date:
+                raise ValueError("Неверный формат даты")
         except (ValueError, TypeError):
             # Fallback на текущий месяц при ошибке парсинга
             now = datetime.now()
@@ -103,8 +132,10 @@ def create_event(request):
         if not class_type_id:
             return JsonResponse({'error': 'Тип занятия обязателен'}, status=400)
         
-        # Парсим дату без конвертации в UTC (локальное время)
-        date_time = datetime.fromisoformat(start.replace('Z', '').replace('+00:00', ''))
+        # Парсим дату, конвертируя из UTC в локальное время если нужно
+        date_time = parse_datetime_to_local(start)
+        if not date_time:
+            return JsonResponse({'error': 'Неверный формат даты'}, status=400)
         
         class_type = get_object_or_404(ClassType, id=class_type_id)
         
@@ -174,7 +205,11 @@ def update_event(request, event_id):
         if 'class_type_id' in data and data['class_type_id']:
             session.class_type = get_object_or_404(ClassType, id=data['class_type_id'])
         if 'start' in data:
-            session.date_time = datetime.fromisoformat(data['start'].replace('Z', '').replace('+00:00', ''))
+            parsed_dt = parse_datetime_to_local(data['start'])
+            if parsed_dt:
+                session.date_time = parsed_dt
+            else:
+                return JsonResponse({'error': 'Неверный формат даты'}, status=400)
         if 'duration' in data:
             session.duration = data['duration']
         elif session.class_type and not session.duration:
