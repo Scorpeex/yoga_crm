@@ -27,8 +27,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-# Timezone settings - дублирование на всякий случай, чтобы переопределить значения ниже
-TIME_ZONE = 'Europe/Moscow'
+# Timezone settings - Новосибирск +7 UTC
+TIME_ZONE = 'Asia/Novosibirsk'
 USE_TZ = False
 
 
@@ -109,7 +109,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'ru-ru'
 
-TIME_ZONE = 'Europe/Moscow'
+TIME_ZONE = 'Asia/Novosibirsk'
 
 USE_I18N = True
 
