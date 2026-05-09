@@ -26,4 +26,8 @@ urlpatterns = [
     path('api/calendar/events/create/', views.create_event, name='create_event'),
     path('api/calendar/events/<int:event_id>/', views.update_event, name='update_event'),
     path('api/calendar/events/<int:event_id>/delete/', views.delete_event, name='delete_event'),
+    path('api/calendar/events/<int:session_id>/attendance/', views.get_attendance, name='get_attendance'),
+    path('api/calendar/events/<int:session_id>/attendance/update/', views.update_attendance, name='update_attendance'),
+    path('api/calendar/events/<int:session_id>/attendance/add/', views.add_client_to_session, name='add_client_to_session'),
+    path('api/clients/search/', views.search_clients, name='search_clients'),
 ]

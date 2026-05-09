@@ -16,85 +16,105 @@
 
     <!-- Модальное окно для создания/редактирования занятия -->
     <div id="eventModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 700px;">
             <span class="close">&times;</span>
             <h2 id="modalTitle">Новое занятие</h2>
-            <form id="eventForm">
-                <input type="hidden" id="eventId">
-                
-                <div class="form-group">
-                    <label for="eventClassType">Тип занятия *</label>
-                    <select id="eventClassType" required>
-                        <option value="">Выберите тип занятия</option>
-                        {% for class_type in class_types %}
-                        <option value="{{ class_type.id }}" data-duration="{{ class_type.duration_minutes }}">{{ class_type.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="eventStart">Время начала *</label>
-                    <div style="position: relative;">
-                        <input type="text" id="eventStart" required style="height: 40px; font-size: 16px; cursor: pointer;" readonly placeholder="Нажмите для выбора времени">
-                        <small style="color: #666; display: block; margin-top: 5px;">Дата: <span id="selectedDate"></span></small>
-                    </div>
-                </div>
-                
-                <!-- Кастомное модальное окно выбора времени -->
-                <div id="timePickerModal" class="modal" style="z-index: 1001;">
-                    <div class="modal-content" style="max-width: 350px; margin: 15% auto;">
-                        <span class="close" id="closeTimePicker">&times;</span>
-                        <h3>Выберите время</h3>
-                        <div style="display: flex; gap: 20px; margin-top: 20px;">
-                            <div style="flex: 1;">
-                                <label>Часы</label>
-                                <div id="hoursColumn" style="display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto;"></div>
-                            </div>
-                            <div style="flex: 1;">
-                                <label>Минуты</label>
-                                <div id="minutesColumn" style="display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto;"></div>
+            
+            <!-- Вкладки -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="class-tab">Занятие</button>
+                <button class="tab-btn" data-tab="attendance-tab">Посещаемость</button>
+            </div>
+            
+            <!-- Содержимое вкладок -->
+            <div class="tab-content">
+                <!-- Вкладка "Занятие" -->
+                <div id="class-tab" class="tab-pane active">
+                    <form id="eventForm">
+                        <input type="hidden" id="eventId">
+                        
+                        <div class="form-group">
+                            <label for="eventClassType">Тип занятия *</label>
+                            <select id="eventClassType" required>
+                                <option value="">Выберите тип занятия</option>
+                                {% for class_type in class_types %}
+                                <option value="{{ class_type.id }}" data-duration="{{ class_type.duration_minutes }}">{{ class_type.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="eventStart">Время начала *</label>
+                            <div style="position: relative;">
+                                <input type="text" id="eventStart" required style="height: 40px; font-size: 16px; cursor: pointer;" readonly placeholder="Нажмите для выбора времени">
+                                <small style="color: #666; display: block; margin-top: 5px;">Дата: <span id="selectedDate"></span></small>
                             </div>
                         </div>
-                        <div class="button-group" style="margin-top: 20px;">
-                            <button type="button" id="confirmTimeBtn" class="btn btn-primary">OK</button>
-                            <button type="button" id="cancelTimeBtn" class="btn btn-secondary">Отмена</button>
+                        
+                        <!-- Кастомное модальное окно выбора времени -->
+                        <div id="timePickerModal" class="modal" style="z-index: 1001;">
+                            <div class="modal-content" style="max-width: 350px; margin: 15% auto;">
+                                <span class="close" id="closeTimePicker">&times;</span>
+                                <h3>Выберите время</h3>
+                                <div style="display: flex; gap: 20px; margin-top: 20px;">
+                                    <div style="flex: 1;">
+                                        <label>Часы</label>
+                                        <div id="hoursColumn" style="display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto;"></div>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <label>Минуты</label>
+                                        <div id="minutesColumn" style="display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto;"></div>
+                                    </div>
+                                </div>
+                                <div class="button-group" style="margin-top: 20px;">
+                                    <button type="button" id="confirmTimeBtn" class="btn btn-primary">OK</button>
+                                    <button type="button" id="cancelTimeBtn" class="btn btn-secondary">Отмена</button>
+                                </div>
+                            </div>
                         </div>
+                        
+                        <div class="form-group">
+                            <label for="eventDuration">Длительность (минут)</label>
+                            <input type="number" id="eventDuration" value="60" min="15" step="15">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="eventHall">Зал</label>
+                            <select id="eventHall">
+                                <option value="">Не выбран</option>
+                                {% for hall in halls %}
+                                <option value="{{ hall.id }}">{{ hall.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="eventMaxParticipants">Макс. участников</label>
+                            <input type="number" id="eventMaxParticipants" value="20" min="1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="eventRecurring" style="width: auto;">
+                                <span>Повторять каждую неделю (на 4 недели)</span>
+                            </label>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                            <button type="button" id="deleteBtn" class="btn btn-danger" style="display: none;">Удалить</button>
+                            <button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- Вкладка "Посещаемость" -->
+                <div id="attendance-tab" class="tab-pane">
+                    <div id="attendanceContent">
+                        <p style="color: #666; text-align: center;">Сначала сохраните занятие, чтобы управлять посещаемостью</p>
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="eventDuration">Длительность (минут)</label>
-                    <input type="number" id="eventDuration" value="60" min="15" step="15">
-                </div>
-                
-                <div class="form-group">
-                    <label for="eventHall">Зал</label>
-                    <select id="eventHall">
-                        <option value="">Не выбран</option>
-                        {% for hall in halls %}
-                        <option value="{{ hall.id }}">{{ hall.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="eventMaxParticipants">Макс. участников</label>
-                    <input type="number" id="eventMaxParticipants" value="20" min="1">
-                </div>
-                
-                <div class="form-group">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" id="eventRecurring" style="width: auto;">
-                        <span>Повторять каждую неделю (на 4 недели)</span>
-                    </label>
-                </div>
-                
-                <div class="button-group">
-                    <button type="submit" class="btn btn-primary">Сохранить</button>
-                    <button type="button" id="deleteBtn" class="btn btn-danger" style="display: none;">Удалить</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 

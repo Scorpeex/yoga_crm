@@ -4,10 +4,11 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 import json
 from datetime import datetime, timedelta
-from .models import ClassSession, Hall, ClassType
+from .models import ClassSession, Hall, ClassType, Client, Attendance
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 import pytz
+from django.db.models import Q
 
 
 def calendar_view(request):
@@ -234,6 +235,137 @@ def delete_event(request, event_id):
             session.delete()
             
         return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@require_http_methods(["GET"])
+def get_attendance(request, session_id):
+    """Получение списка посещаемости для занятия"""
+    try:
+        session = get_object_or_404(ClassSession, id=session_id)
+        
+        # Получаем всех клиентов, записанных на это занятие
+        attendances = Attendance.objects.filter(session=session).select_related('client')
+        
+        # IDs клиентов, которые уже записаны
+        registered_client_ids = set(a.client_id for a in attendances)
+        
+        attendance_list = []
+        for attendance in attendances:
+            attendance_list.append({
+                'id': attendance.id,
+                'client_id': attendance.client.id,
+                'client_name': f"{attendance.client.last_name} {attendance.client.first_name}",
+                'client_phone': attendance.client.phone or '',
+                'attended': attendance.status == 'attended'
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'attendances': attendance_list,
+            'registered_count': len(registered_client_ids)
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@require_http_methods(["POST"])
+def update_attendance(request, session_id):
+    """Обновление посещаемости для занятия"""
+    try:
+        session = get_object_or_404(ClassSession, id=session_id)
+        data = json.loads(request.body)
+        
+        # attended_client_ids - список ID клиентов, которые посетили занятие
+        attended_client_ids = data.get('attended_clients', [])
+        
+        # Обновляем или создаем записи о посещении
+        for client_id in attended_client_ids:
+            client = get_object_or_404(Client, id=client_id)
+            attendance, created = Attendance.objects.get_or_create(
+                session=session,
+                client=client,
+                defaults={'status': 'attended'}
+            )
+            if not created:
+                attendance.status = 'attended'
+                attendance.save()
+        
+        # Для клиентов, которые были записаны, но не отмечены - ставим статус no_show
+        all_attendances = Attendance.objects.filter(session=session)
+        for attendance in all_attendances:
+            if attendance.client_id not in attended_client_ids:
+                attendance.status = 'no_show'
+                attendance.save()
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@require_http_methods(["POST"])
+def add_client_to_session(request, session_id):
+    """Добавление клиента на занятие вручную"""
+    try:
+        session = get_object_or_404(ClassSession, id=session_id)
+        data = json.loads(request.body)
+        client_id = data.get('client_id')
+        
+        if not client_id:
+            return JsonResponse({'error': 'ID клиента обязателен'}, status=400)
+        
+        client = get_object_or_404(Client, id=client_id)
+        
+        # Проверяем, не записан ли уже клиент
+        existing = Attendance.objects.filter(session=session, client=client).first()
+        if existing:
+            return JsonResponse({'error': 'Клиент уже записан на это занятие'}, status=400)
+        
+        # Создаем запись о посещении
+        Attendance.objects.create(
+            session=session,
+            client=client,
+            status='attended'
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'client': {
+                'id': client.id,
+                'name': f"{client.last_name} {client.first_name}",
+                'phone': client.phone or ''
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@require_http_methods(["GET"])
+def search_clients(request):
+    """Поиск клиентов по имени/фамилии/телефону"""
+    try:
+        query = request.GET.get('q', '')
+        
+        if not query:
+            return JsonResponse({'clients': []})
+        
+        # Ищем по фамилии, имени или телефону
+        clients = Client.objects.filter(
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(phone__icontains=query)
+        ).filter(is_active=True)[:10]  # Ограничиваем до 10 результатов
+        
+        client_list = []
+        for client in clients:
+            client_list.append({
+                'id': client.id,
+                'name': f"{client.last_name} {client.first_name}",
+                'phone': client.phone or ''
+            })
+        
+        return JsonResponse({'clients': client_list})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 

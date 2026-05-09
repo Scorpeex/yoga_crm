@@ -192,3 +192,141 @@ input:focus, select:focus, textarea:focus {
     color: #666;
     margin-top: 4px;
 }
+
+/* Стили для вкладок */
+.tabs {
+    display: flex;
+    gap: 5px;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: #333;
+}
+
+.tab-btn.active {
+    color: #4CAF50;
+    border-bottom-color: #4CAF50;
+}
+
+.tab-content {
+    position: relative;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* Стили для списка посещаемости */
+.attendance-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+.attendance-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: #fafafa;
+}
+
+.attendance-item input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+.attendance-item label {
+    flex: 1;
+    margin: 0;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.attendance-item .client-name {
+    font-weight: 600;
+}
+
+.attendance-item .client-phone {
+    font-size: 12px;
+    color: #666;
+}
+
+.add-client-section {
+    border-top: 1px solid #ddd;
+    padding-top: 15px;
+    margin-top: 15px;
+}
+
+.add-client-section h4 {
+    margin-bottom: 10px;
+    color: #555;
+    font-size: 14px;
+}
+
+.client-search {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.client-search input {
+    flex: 1;
+}
+
+.client-search-results {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    display: none;
+}
+
+.client-search-result-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.client-search-result-item:hover {
+    background: #f5f5f5;
+}
+
+.client-search-result-item:last-child {
+    border-bottom: none;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.attendance-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}
