@@ -421,7 +421,13 @@ function applyTimeSelection() {
 function formatDateTime(date) {
     if (!date) return '';
     const d = new Date(date);
-    return d.toISOString().slice(0, 16);
+    // Используем локальное время вместо UTC
+    const year = d.getFullYear();
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    const hours = d.getHours().toString().padStart(2, '0');
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 function saveEvent() {
@@ -444,14 +450,16 @@ function saveEvent() {
             data.start = `${datePart}T${data.start}`;
         } else {
             const today = new Date();
-            const datePart = today.toISOString().split('T')[0];
+            // Используем локальную дату вместо UTC
+            const datePart = today.toLocaleDateString('ru-RU').split('.').reverse().join('-');
             data.start = `${datePart}T${data.start}`;
         }
     } else {
         // При редактировании нужно получить полную дату из события календаря
         const eventObj = calendar.getEventById(eventId);
         if (eventObj) {
-            const datePart = eventObj.start.toISOString().split('T')[0];
+            // Используем локальную дату вместо UTC
+            const datePart = eventObj.start.toLocaleDateString('ru-RU').split('.').reverse().join('-');
             data.start = `${datePart}T${data.start}`;
         }
     }
@@ -482,8 +490,16 @@ function saveEvent() {
 }
 
 function updateEvent(event) {
+    // Форматируем дату в локальном формате без UTC конвертации
+    const year = event.start.getFullYear();
+    const month = (event.start.getMonth() + 1).toString().padStart(2, '0');
+    const day = event.start.getDate().toString().padStart(2, '0');
+    const hours = event.start.getHours().toString().padStart(2, '0');
+    const minutes = event.start.getMinutes().toString().padStart(2, '0');
+    const seconds = event.start.getSeconds().toString().padStart(2, '0');
+    
     const data = {
-        start: event.start.toISOString(),
+        start: `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`,
         duration: event.end ? Math.round((event.end - event.start) / 60000) : 60,
     };
     
