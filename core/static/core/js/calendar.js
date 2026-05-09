@@ -332,10 +332,11 @@ function initTimePicker() {
             hourBtn.style.background = '#4CAF50';
             hourBtn.style.color = 'white';
             selectedHour = h.toString().padStart(2, '0');
-            // Если минуты уже выбраны, автоматически применяем время и закрываем окно
+            // Применяем время и закрываем окно только если минуты УЖЕ были выбраны ранее
             if (selectedMinute !== null) {
                 applyTimeSelection();
             }
+            // Если минуты не выбраны - просто сохраняем час и ждем выбора минут
         });
         hoursColumn.appendChild(hourBtn);
     }
