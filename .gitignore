@@ -1,37 +1,43 @@
 ```
-# Compiled and build artifacts
-*.pyc
+# Python
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-# Dependencies
-.venv/
-venv/
-node_modules/
-pip-log.txt
-pipenv.lock
-requirements/*.txt
-
-# Logs and temp files
+# Django
 *.log
-*.tmp
-*.swp
-*.swo
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Static files
+/staticfiles/
+/collectstatic/
 
 # Environment
 .env
 .env.local
 .env.*
+.env.local.*
 
 # Editors
 .vscode/
 .idea/
-*.sublime-project
-*.sublime-workspace
-nbproject/
+*.swp
+*.swo
 
-# OS generated files
+# OS
 .DS_Store
 Thumbs.db
-ehthumbs.db
-Icon?
+
+# Coverage
+.coverage
+coverage/
+htmlcov/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
 ```
