@@ -10,8 +10,8 @@ document.addEventListener('DOMContentLoaded', function() {
     calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         locale: 'ru',
-        timeZone: 'Asia/Novosibirsk',
         firstDay: 1,
+        timeZone: 'local',  // Используем локальное время браузера
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Клик по дате - создание нового события
         select: function(info) {
             // При явном выборе времени используем локальную дату без конвертации
-            // info.start уже содержит локальное время благодаря timeZone: 'Asia/Novosibirsk'
+            // info.start теперь в локальном времени браузера (без timeZone конвертации)
             const localStart = info.start;
             const year = localStart.getFullYear();
             const month = (localStart.getMonth() + 1).toString().padStart(2, '0');
