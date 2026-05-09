@@ -2,12 +2,8 @@ import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-import json
 from datetime import datetime, timedelta
 from .models import ClassSession, Hall, ClassType, Client, Attendance
-from django.utils import timezone
-from django.utils.dateparse import parse_datetime
-import pytz
 from django.db.models import Q
 
 
@@ -27,11 +23,11 @@ def get_events(request):
     if start_param and end_param:
         # Используем параметры от FullCalendar (ISO формат даты)
         try:
-            start_date = datetime.fromisoformat(start_param.replace('Z', '+00:00')).replace(tzinfo=None)
-            end_date = datetime.fromisoformat(end_param.replace('Z', '+00:00')).replace(tzinfo=None)
+            start_date = datetime.fromisoformat(start_param.replace('Z', '').replace('+00:00', ''))
+            end_date = datetime.fromisoformat(end_param.replace('Z', '').replace('+00:00', ''))
         except (ValueError, TypeError):
             # Fallback на текущий месяц при ошибке парсинга
-            now = timezone.now()
+            now = datetime.now()
             start_date = datetime(now.year, now.month, 1)
             if now.month == 12:
                 end_date = datetime(now.year + 1, 1, 1) - timedelta(days=1)
@@ -39,15 +35,15 @@ def get_events(request):
                 end_date = datetime(now.year, now.month + 1, 1) - timedelta(days=1)
     else:
         # Fallback на параметры year/month если start/end не переданы
-        year = request.GET.get('year', timezone.now().year)
-        month = request.GET.get('month', timezone.now().month)
+        year = request.GET.get('year', datetime.now().year)
+        month = request.GET.get('month', datetime.now().month)
         
         try:
             year = int(year)
             month = int(month)
         except (ValueError, TypeError):
-            year = timezone.now().year
-            month = timezone.now().month
+            year = datetime.now().year
+            month = datetime.now().month
         
         # Первый и последний день месяца
         start_date = datetime(year, month, 1)
@@ -108,7 +104,7 @@ def create_event(request):
             return JsonResponse({'error': 'Тип занятия обязателен'}, status=400)
         
         # Парсим дату без конвертации в UTC (локальное время)
-        date_time = datetime.fromisoformat(start.replace('Z', ''))
+        date_time = datetime.fromisoformat(start.replace('Z', '').replace('+00:00', ''))
         
         class_type = get_object_or_404(ClassType, id=class_type_id)
         
@@ -178,7 +174,7 @@ def update_event(request, event_id):
         if 'class_type_id' in data and data['class_type_id']:
             session.class_type = get_object_or_404(ClassType, id=data['class_type_id'])
         if 'start' in data:
-            session.date_time = datetime.fromisoformat(data['start'].replace('Z', ''))
+            session.date_time = datetime.fromisoformat(data['start'].replace('Z', '').replace('+00:00', ''))
         if 'duration' in data:
             session.duration = data['duration']
         elif session.class_type and not session.duration:

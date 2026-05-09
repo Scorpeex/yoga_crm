@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         locale: 'ru',
-        timeZone: 'Europe/Moscow',
+        timeZone: 'Asia/Novosibirsk',
         firstDay: 1,
         headerToolbar: {
             left: 'prev,next today',
