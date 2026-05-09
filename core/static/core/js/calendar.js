@@ -35,13 +35,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let displayText = className;
             if (hallName) {
-                displayText = `${className} | ${hallName}`;
+                displayText = ` ${className} | ${hallName}`;
             }
             
             return {
                 html: `<div style="width: 100%; height: 100%; background-color: ${info.event.backgroundColor}; border-radius: 3px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px; padding: 2px; text-align: center;">
-                    <div style="font-size: 10px; opacity: 0.9;">${startTime}</div>
-                    <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${displayText}</div>
+                    <div style="font-size: 12px; opacity: 0.9;">${startTime}${displayText}</div>
                 </div>`
             };
         },
