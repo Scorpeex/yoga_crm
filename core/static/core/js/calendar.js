@@ -52,8 +52,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Клик по дате - создание нового события
         select: function(info) {
-            selectedDateFromClick = info.startStr; // Сохраняем полную дату и время клика
-            openModal(null, info.startStr);
+            // При явном выборе времени используем локальную дату без конвертации
+            // info.start уже содержит локальное время благодаря timeZone: 'Asia/Novosibirsk'
+            const localStart = info.start;
+            const year = localStart.getFullYear();
+            const month = (localStart.getMonth() + 1).toString().padStart(2, '0');
+            const day = localStart.getDate().toString().padStart(2, '0');
+            const hours = localStart.getHours().toString().padStart(2, '0');
+            const minutes = localStart.getMinutes().toString().padStart(2, '0');
+            selectedDateFromClick = `${year}-${month}-${day}T${hours}:${minutes}`;
+            openModal(null, selectedDateFromClick);
         },
         
         // Клик по событию - редактирование
@@ -445,21 +453,26 @@ function saveEvent() {
     // Если создаем новое событие, используем дату из клика по календарю
     if (!eventId) {
         if (selectedDateFromClick) {
-            // Берем дату из selectedDateFromClick (формат YYYY-MM-DD или YYYY-MM-DDTHH:MM:SS)
-            const datePart = selectedDateFromClick.slice(0, 10); // YYYY-MM-DD
-            data.start = `${datePart}T${data.start}`;
+            // selectedDateFromClick уже в правильном формате YYYY-MM-DDTHH:MM
+            data.start = selectedDateFromClick;
         } else {
             const today = new Date();
             // Используем локальную дату вместо UTC
-            const datePart = today.toLocaleDateString('ru-RU').split('.').reverse().join('-');
+            const year = today.getFullYear();
+            const month = (today.getMonth() + 1).toString().padStart(2, '0');
+            const day = today.getDate().toString().padStart(2, '0');
+            const datePart = `${year}-${month}-${day}`;
             data.start = `${datePart}T${data.start}`;
         }
     } else {
         // При редактировании нужно получить полную дату из события календаря
         const eventObj = calendar.getEventById(eventId);
         if (eventObj) {
-            // Используем локальную дату вместо UTC
-            const datePart = eventObj.start.toLocaleDateString('ru-RU').split('.').reverse().join('-');
+            // Используем локальные компоненты даты для избежания проблем с timezone
+            const year = eventObj.start.getFullYear();
+            const month = (eventObj.start.getMonth() + 1).toString().padStart(2, '0');
+            const day = eventObj.start.getDate().toString().padStart(2, '0');
+            const datePart = `${year}-${month}-${day}`;
             data.start = `${datePart}T${data.start}`;
         }
     }
