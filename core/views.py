@@ -442,16 +442,9 @@ def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
-            phone = form.cleaned_data.get('username')
+            # Номер телефона уже очищен в форме через clean_username
+            cleaned_phone = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
-            
-            # Очищаем номер телефона от форматирования
-            import re
-            cleaned_phone = re.sub(r'[^\d+]', '', phone)
-            
-            # Если номер начинается с 8, заменяем на +7
-            if cleaned_phone.startswith('8') and len(cleaned_phone) == 11:
-                cleaned_phone = '+7' + cleaned_phone[1:]
             
             user = authenticate(request, username=cleaned_phone, password=password)
             if user is not None:
