@@ -251,7 +251,7 @@ function openModal(event, startStr) {
         // Редактирование существующего события
         currentEventId = event.id;
         currentSessionId = event.id; // Сохраняем ID сессии для посещаемости
-        modalTitle.textContent = 'Редактировать занятие';
+        modalTitle.textContent = isStaff ? 'Редактировать занятие' : 'Запись на занятие';
         document.getElementById('eventId').value = event.id;
         
         // Устанавливаем тип занятия (по названию ищем в списке)
