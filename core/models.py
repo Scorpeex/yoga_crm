@@ -1,5 +1,8 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class ClassType(models.Model):
@@ -18,21 +21,35 @@ class ClassType(models.Model):
 
 
 class Client(models.Model):
-    """Модель клиента (ученика)"""
-    first_name = models.CharField("Имя", max_length=100)
-    last_name = models.CharField("Фамилия", max_length=100)
+    """Модель клиента (ученика) - привязана к пользователю Django"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Пользователь", related_name='client_profile', null=True, blank=True)
     phone = models.CharField("Телефон", max_length=20, blank=True)
-    email = models.EmailField("Email", blank=True)
     created_at = models.DateTimeField("Дата регистрации", auto_now_add=True)
     is_active = models.BooleanField("Активен", default=True)
 
     class Meta:
         verbose_name = "Клиент"
         verbose_name_plural = "Клиенты"
-        ordering = ['last_name', 'first_name']
+        ordering = ['user__last_name', 'user__first_name']
 
     def __str__(self):
-        return f"{self.last_name} {self.first_name}"
+        if self.user:
+            return f"{self.user.last_name} {self.user.first_name}"
+        return f"Client #{self.id}"
+
+
+@receiver(post_save, sender=User)
+def create_client_profile(sender, instance, created, **kwargs):
+    """Автоматически создаёт профиль клиента при создании пользователя"""
+    if created and not hasattr(instance, 'client_profile'):
+        Client.objects.create(user=instance)
+
+
+@receiver(post_save, sender=User)
+def save_client_profile(sender, instance, **kwargs):
+    """Сохраняет профиль клиента при сохранении пользователя"""
+    if hasattr(instance, 'client_profile'):
+        instance.client_profile.save()
 
 
 class Hall(models.Model):

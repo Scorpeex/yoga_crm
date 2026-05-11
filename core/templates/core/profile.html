@@ -1,0 +1,276 @@
+{% extends 'admin/base_site.html' %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header">
+        <h1>Личный кабинет</h1>
+        <div class="user-info">
+            <span class="user-name">{{ client.user.first_name }} {{ client.user.last_name }}</span>
+            <span class="user-email">{{ client.user.email }}</span>
+            {% if client.phone %}
+                <span class="user-phone">{{ client.phone }}</span>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="profile-content">
+        <!-- Будущие занятия -->
+        <section class="profile-section">
+            <h2>Предстоящие занятия</h2>
+            {% if upcoming_sessions %}
+                <div class="sessions-list">
+                    {% for session in upcoming_sessions %}
+                        <div class="session-card" style="border-left-color: {{ session.hall.color|default:'#4ECDC4' }}">
+                            <div class="session-time">
+                                <span class="date">{{ session.date_time|date:"d.m.Y" }}</span>
+                                <span class="time">{{ session.date_time|date:"H:i" }}</span>
+                            </div>
+                            <div class="session-details">
+                                <h3>{{ session.class_type.name }}</h3>
+                                {% if session.hall %}
+                                    <p class="hall-name">Зал: {{ session.hall.name }}</p>
+                                {% endif %}
+                                <p class="duration">{{ session.duration }} мин.</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="no-data">У вас нет предстоящих занятий</p>
+            {% endif %}
+        </section>
+        
+        <!-- История посещений -->
+        <section class="profile-section">
+            <h2>История посещений</h2>
+            {% if past_sessions %}
+                <div class="sessions-list">
+                    {% for session in past_sessions %}
+                        <div class="session-card past" style="border-left-color: {{ session.hall.color|default:'#4ECDC4' }}">
+                            <div class="session-time">
+                                <span class="date">{{ session.date_time|date:"d.m.Y" }}</span>
+                                <span class="time">{{ session.date_time|date:"H:i" }}</span>
+                            </div>
+                            <div class="session-details">
+                                <h3>{{ session.class_type.name }}</h3>
+                                {% if session.hall %}
+                                    <p class="hall-name">Зал: {{ session.hall.name }}</p>
+                                {% endif %}
+                                <p class="duration">{{ session.duration }} мин.</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="no-data">История посещений пуста</p>
+            {% endif %}
+        </section>
+    </div>
+    
+    <div class="profile-actions">
+        <a href="{% url 'calendar' %}" class="btn btn-secondary">Перейти к расписанию</a>
+        <a href="{% url 'logout' %}" class="btn btn-outline">Выйти</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.profile-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+}
+
+.profile-header h1 {
+    margin: 0 0 15px 0;
+    font-size: 32px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.user-name {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.user-email, .user-phone {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.profile-content {
+    display: grid;
+    gap: 30px;
+}
+
+.profile-section {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.profile-section h2 {
+    margin: 0 0 20px 0;
+    color: #333;
+    font-size: 22px;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 10px;
+}
+
+.sessions-list {
+    display: grid;
+    gap: 15px;
+}
+
+.session-card {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border-left: 4px solid;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.session-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+}
+
+.session-card.past {
+    opacity: 0.8;
+    background: #f5f5f5;
+}
+
+.session-time {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+    padding-right: 20px;
+    border-right: 1px solid #e0e0e0;
+}
+
+.session-time .date {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.session-time .time {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.session-details {
+    flex: 1;
+}
+
+.session-details h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.session-details .hall-name {
+    margin: 0 0 5px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.session-details .duration {
+    margin: 0;
+    color: #888;
+    font-size: 13px;
+}
+
+.no-data {
+    text-align: center;
+    color: #999;
+    padding: 30px;
+    font-style: italic;
+}
+
+.profile-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    justify-content: center;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 30px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-outline {
+    background: transparent;
+    color: #667eea;
+    border: 2px solid #667eea;
+}
+
+.btn-outline:hover {
+    background: #667eea;
+    color: white;
+}
+
+@media (max-width: 600px) {
+    .session-card {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .session-time {
+        flex-direction: row;
+        gap: 15px;
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+        padding-right: 0;
+        padding-bottom: 10px;
+    }
+    
+    .profile-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}

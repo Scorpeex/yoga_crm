@@ -30,4 +30,10 @@ urlpatterns = [
     path('api/calendar/events/<int:session_id>/attendance/update/', views.update_attendance, name='update_attendance'),
     path('api/calendar/events/<int:session_id>/attendance/add/', views.add_client_to_session, name='add_client_to_session'),
     path('api/clients/search/', views.search_clients, name='search_clients'),
+    
+    # Аутентификация и личный кабинет
+    path('register/', views.register_view, name='register'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('profile/', views.profile_view, name='profile'),
 ]
