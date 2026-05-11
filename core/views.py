@@ -55,6 +55,7 @@ def calendar_view(request):
         'class_types': class_types,
         'is_moderator': is_moderator,
         'is_admin': is_admin,
+        'user_role': 'admin' if is_admin else ('moderator' if is_moderator else 'student'),
     })
 
 
@@ -318,43 +319,34 @@ def get_attendance(request, session_id):
     try:
         session = get_object_or_404(ClassSession, id=session_id)
         
-        # Проверка прав доступа - только модераторы могут видеть полные данные
+        # Проверка прав доступа
         is_moderator = False
+        current_user_client_id = None
         if request.user.is_authenticated and hasattr(request.user, 'client_profile'):
             client = request.user.client_profile
             is_moderator = client.is_moderator
+            current_user_client_id = client.id
         
-        # Если не модератор, возвращаем только количество записанных
-        if not is_moderator:
-            attendances = Attendance.objects.filter(session=session)
-            registered_count = attendances.count()
-            return JsonResponse({
-                'success': True,
-                'attendances': [],
-                'registered_count': registered_count,
-                'can_view_details': False
-            })
-        
-        # Получаем всех клиентов, записанных на это занятие (для модераторов)
+        # Получаем всех клиентов, записанных на это занятие
         attendances = Attendance.objects.filter(session=session).select_related('client')
-        
-        # IDs клиентов, которые уже записаны
-        registered_client_ids = set(a.client_id for a in attendances)
         
         attendance_list = []
         for attendance in attendances:
-            attendance_list.append({
+            attendance_data = {
                 'id': attendance.id,
                 'client_id': attendance.client.id,
                 'client_name': f"{attendance.client.last_name} {attendance.client.first_name}",
                 'client_phone': attendance.client.phone or '',
-                'attended': attendance.status == 'attended'
-            })
+                'attended': attendance.status == 'attended',
+                'is_current_user': attendance.client_id == current_user_client_id,
+                'max_participants': session.max_participants
+            }
+            attendance_list.append(attendance_data)
         
         return JsonResponse({
             'success': True,
             'attendances': attendance_list,
-            'registered_count': len(registered_client_ids),
+            'registered_count': len(attendance_list),
             'can_view_details': True
         })
     except Exception as e:
@@ -397,6 +389,77 @@ def update_attendance(request, session_id):
             if attendance.client_id not in attended_client_ids:
                 attendance.status = 'no_show'
                 attendance.save()
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@require_http_methods(["POST"])
+def enroll_to_class(request, session_id):
+    """Запись пользователя на занятие"""
+    # Проверка прав доступа
+    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+        return JsonResponse({'error': 'Доступ запрещен. Требуется авторизация'}, status=403)
+    
+    client = request.user.client_profile
+    
+    try:
+        session = get_object_or_404(ClassSession, id=session_id)
+        
+        # Проверяем время до занятия (не менее 4 часов)
+        now = timezone.now()
+        time_until_class = session.start_time - now
+        if time_until_class.total_seconds() < 4 * 3600:  # 4 часа в секундах
+            return JsonResponse({'error': 'Запись возможна не позднее чем за 4 часа до начала занятия'}, status=400)
+        
+        # Проверяем, не записан ли уже клиент
+        existing = Attendance.objects.filter(session=session, client=client).first()
+        if existing:
+            return JsonResponse({'error': 'Вы уже записаны на это занятие'}, status=400)
+        
+        # Проверяем наличие свободных мест
+        current_count = Attendance.objects.filter(session=session).count()
+        if current_count >= session.max_participants:
+            return JsonResponse({'error': 'Нет свободных мест'}, status=400)
+        
+        # Создаем запись о посещении
+        Attendance.objects.create(
+            session=session,
+            client=client,
+            status='attended'
+        )
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@require_http_methods(["POST"])
+def cancel_enrollment(request, session_id):
+    """Отмена записи пользователя на занятие"""
+    # Проверка прав доступа
+    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+        return JsonResponse({'error': 'Доступ запрещен. Требуется авторизация'}, status=403)
+    
+    client = request.user.client_profile
+    
+    try:
+        session = get_object_or_404(ClassSession, id=session_id)
+        
+        # Проверяем время до занятия (не менее 4 часов)
+        now = timezone.now()
+        time_until_class = session.start_time - now
+        if time_until_class.total_seconds() < 4 * 3600:  # 4 часа в секундах
+            return JsonResponse({'error': 'Отмена записи возможна не позднее чем за 4 часа до начала занятия'}, status=400)
+        
+        # Находим запись
+        attendance = Attendance.objects.filter(session=session, client=client).first()
+        if not attendance:
+            return JsonResponse({'error': 'Вы не записаны на это занятие'}, status=400)
+        
+        # Удаляем запись
+        attendance.delete()
         
         return JsonResponse({'success': True})
     except Exception as e:

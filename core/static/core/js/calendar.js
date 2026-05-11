@@ -215,6 +215,27 @@ function openModal(event, startStr) {
     const modalTitle = document.getElementById('modalTitle');
     const deleteBtn = document.getElementById('deleteBtn');
     const selectedDateSpan = document.getElementById('selectedDate');
+    const classTabBtn = document.getElementById('classTabBtn');
+    const attendanceTabBtn = document.getElementById('attendanceTabBtn');
+    const saveEventBtn = document.getElementById('saveEventBtn');
+    
+    // Определяем роль пользователя
+    const userRole = window.USER_ROLE || 'student';
+    const isStaff = userRole === 'admin' || userRole === 'moderator';
+    
+    // Для обычных пользователей скрываем вкладку редактирования
+    if (!isStaff) {
+        classTabBtn.style.display = 'none';
+        attendanceTabBtn.style.display = 'inline-block';
+        // Переключаемся на вкладку записи
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        attendanceTabBtn.classList.add('active');
+        document.getElementById('attendance-tab').classList.add('active');
+    } else {
+        classTabBtn.style.display = 'inline-block';
+        attendanceTabBtn.style.display = 'inline-block';
+    }
     
     // Извлекаем дату из startStr (формат YYYY-MM-DD или YYYY-MM-DDTHH:MM:SS)
     let selectedDate = '';
@@ -272,7 +293,14 @@ function openModal(event, startStr) {
             deleteBtn.removeAttribute('data-recurrence-id');
         }
         
-        deleteBtn.style.display = 'inline-block';
+        // Для обычных пользователей скрываем кнопку удаления
+        if (isStaff) {
+            deleteBtn.style.display = 'inline-block';
+            saveEventBtn.style.display = 'inline-block';
+        } else {
+            deleteBtn.style.display = 'none';
+            saveEventBtn.style.display = 'none';
+        }
     } else {
         // Создание нового события
         currentEventId = null;
@@ -314,9 +342,21 @@ function openModal(event, startStr) {
         deleteBtn.removeAttribute('data-is-recurring');
         deleteBtn.removeAttribute('data-recurrence-id');
         deleteBtn.style.display = 'none';
+        
+        // Для обычных пользователей скрываем кнопку сохранения при создании
+        if (!isStaff) {
+            saveEventBtn.style.display = 'none';
+        } else {
+            saveEventBtn.style.display = 'inline-block';
+        }
     }
     
     modal.style.display = 'block';
+    
+    // Если это существующее событие и обычный пользователь - загружаем данные о записи
+    if (event && !isStaff) {
+        loadAttendanceForStudent(currentEventId);
+    }
 }
 
 function closeModal() {
@@ -589,8 +629,10 @@ function loadAttendance(sessionId) {
 }
 
 // Рендеринг списка посещаемости
-function renderAttendanceList(attendances) {
+function renderAttendanceList(attendances, forStudent = false) {
     const attendanceContent = document.getElementById('attendanceContent');
+    const userRole = window.USER_ROLE || 'student';
+    const isStaff = userRole === 'admin' || userRole === 'moderator';
     
     let html = '';
     
@@ -604,9 +646,9 @@ function renderAttendanceList(attendances) {
         attendances.forEach(attendance => {
             html += `
                 <div class="attendance-item">
-                    <input type="checkbox" id="client-${attendance.client_id}" 
+                    ${isStaff ? `<input type="checkbox" id="client-${attendance.client_id}" 
                            data-client-id="${attendance.client_id}" 
-                           ${attendance.attended ? 'checked' : ''}>
+                           ${attendance.attended ? 'checked' : ''}>` : ''}
                     <label for="client-${attendance.client_id}">
                         <span class="client-name">${attendance.client_name}</span>
                         ${attendance.client_phone ? `<span class="client-phone">${attendance.client_phone}</span>` : ''}
@@ -618,24 +660,77 @@ function renderAttendanceList(attendances) {
     
     html += '</div>';
     
-    // Кнопка сохранения посещаемости
-    html += `
-        <div class="attendance-actions">
-            <button type="button" class="btn btn-primary" onclick="saveAttendance()">Сохранить посещаемость</button>
-        </div>
-    `;
+    // Информация о свободных местах
+    const maxParticipants = attendances.length > 0 ? attendances[0].max_participants || 20 : 20;
+    const freeSlots = maxParticipants - attendances.length;
+    html += `<div style="margin: 15px 0; padding: 10px; background-color: #f0f8ff; border-radius: 5px;">
+        <strong>Свободные места:</strong> ${freeSlots} из ${maxParticipants}
+    </div>`;
     
-    // Секция добавления клиента вручную
-    html += `
-        <div class="add-client-section">
-            <h4>Добавить клиента вручную</h4>
-            <div class="client-search">
-                <input type="text" id="clientSearchInput" placeholder="Поиск по имени или телефону..." oninput="searchClients(this.value)">
-                <button type="button" class="btn btn-secondary btn-small" onclick="closeSearchResults()">✕</button>
+    // Кнопка сохранения посещаемости (только для персонала)
+    if (isStaff) {
+        html += `
+            <div class="attendance-actions">
+                <button type="button" class="btn btn-primary" onclick="saveAttendance()">Сохранить</button>
             </div>
-            <div id="clientSearchResults" class="client-search-results"></div>
-        </div>
-    `;
+        `;
+    }
+    
+    // Кнопки записи/отмены для обычного пользователя
+    if (!isStaff && currentEventId) {
+        const currentUserIsEnrolled = attendances.some(a => a.is_current_user);
+        const canEnroll = freeSlots > 0;
+        
+        // Проверяем время до занятия
+        const eventElement = calendar.getEventById(currentEventId);
+        let canAction = true;
+        if (eventElement) {
+            const now = new Date();
+            const eventStart = eventElement.start;
+            const hoursUntilEvent = (eventStart - now) / (1000 * 60 * 60);
+            canAction = hoursUntilEvent > 4;
+        }
+        
+        if (currentUserIsEnrolled) {
+            if (canAction) {
+                html += `
+                    <div class="attendance-actions">
+                        <button type="button" class="btn btn-danger" onclick="cancelEnrollment(${currentEventId})">Отменить запись</button>
+                    </div>
+                `;
+            } else {
+                html += `<p style="color: #999; font-style: italic; margin-top: 10px;">Отмена записи возможна не позднее чем за 4 часа до начала занятия</p>`;
+            }
+        } else {
+            if (canEnroll) {
+                if (canAction) {
+                    html += `
+                        <div class="attendance-actions">
+                            <button type="button" class="btn btn-primary" onclick="enrollToClass(${currentEventId})">Записаться на занятие</button>
+                        </div>
+                    `;
+                } else {
+                    html += `<p style="color: #999; font-style: italic; margin-top: 10px;">Запись возможна не позднее чем за 4 часа до начала занятия</p>`;
+                }
+            } else {
+                html += `<p style="color: #999; font-style: italic; margin-top: 10px;">Нет свободных мест</p>`;
+            }
+        }
+    }
+    
+    // Секция добавления клиента вручную (только для персонала)
+    if (isStaff) {
+        html += `
+            <div class="add-client-section">
+                <h4>Добавить клиента вручную</h4>
+                <div class="client-search">
+                    <input type="text" id="clientSearchInput" placeholder="Поиск по имени или телефону..." oninput="searchClients(this.value)">
+                    <button type="button" class="btn btn-secondary btn-small" onclick="closeSearchResults()">✕</button>
+                </div>
+                <div id="clientSearchResults" class="client-search-results"></div>
+            </div>
+        `;
+    }
     
     attendanceContent.innerHTML = html;
 }
@@ -759,5 +854,78 @@ function saveAttendance() {
     })
     .catch(error => {
         alert(`Ошибка при сохранении: ${error}`);
+    });
+}
+
+// Загрузка данных о записи для обычного пользователя
+function loadAttendanceForStudent(sessionId) {
+    const attendanceContent = document.getElementById('attendanceContent');
+    attendanceContent.innerHTML = '<p style="text-align: center; color: #666;">Загрузка...</p>';
+    
+    fetch(`/api/calendar/events/${sessionId}/attendance/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderAttendanceList(data.attendances, true);
+            } else {
+                attendanceContent.innerHTML = `<p style="color: red;">Ошибка: ${data.error}</p>`;
+            }
+        })
+        .catch(error => {
+            attendanceContent.innerHTML = `<p style="color: red;">Ошибка при загрузке: ${error}</p>`;
+        });
+}
+
+// Запись на занятие
+function enrollToClass(sessionId) {
+    fetch(`/api/calendar/events/${sessionId}/enroll/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Вы успешно записаны на занятие');
+            // Перезагружаем список и обновляем календарь
+            loadAttendanceForStudent(sessionId);
+            calendar.refetchEvents();
+        } else {
+            alert(`Ошибка: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        alert(`Ошибка при записи: ${error}`);
+    });
+}
+
+// Отмена записи на занятие
+function cancelEnrollment(sessionId) {
+    if (!confirm('Вы уверены, что хотите отменить запись?')) {
+        return;
+    }
+    
+    fetch(`/api/calendar/events/${sessionId}/cancel-enrollment/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Запись отменена');
+            // Перезагружаем список и обновляем календарь
+            loadAttendanceForStudent(sessionId);
+            calendar.refetchEvents();
+        } else {
+            alert(`Ошибка: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        alert(`Ошибка при отмене записи: ${error}`);
     });
 }
