@@ -101,27 +101,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // Обработка поля выбора времени - открытие кастомного пикера
-    const eventStartInput = document.getElementById('eventStart');
-    eventStartInput.addEventListener('click', function() {
-        openTimePicker();
-    });
-    
-    // Инициализация сеток часов и минут
-    initTimePicker();
-    
-    // Кнопки подтверждения/отмены выбора времени
-    document.getElementById('confirmTimeBtn').addEventListener('click', function() {
-        applyTimeSelection();
-    });
-    
-    document.getElementById('cancelTimeBtn').addEventListener('click', function() {
-        closeTimePicker();
-    });
-    
-    document.getElementById('closeTimePicker').addEventListener('click', function() {
-        closeTimePicker();
-    });
+    // Инициализация выпадающих списков часов и минут
+    initTimeSelects();
     
     // Обработка формы
     document.getElementById('eventForm').onsubmit = function(e) {
@@ -147,11 +128,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.onclick = function(event) {
         if (event.target == modal) {
             closeModal();
-        }
-        // Закрытие модального окна выбора времени при клике вне его
-        const timePickerModal = document.getElementById('timePickerModal');
-        if (event.target == timePickerModal) {
-            closeTimePicker();
         }
         // Закрытие модального окна подтверждения удаления при клике вне его
         if (event.target == deleteConfirmModal) {
@@ -242,8 +218,8 @@ function openModal(event, startStr) {
         // Время начала - берем локальные часы и минуты напрямую, чтобы избежать проблем с timezone
         const startHours = event.start.getHours().toString().padStart(2, '0');
         const startMinutes = event.start.getMinutes().toString().padStart(2, '0');
-        const startTime = `${startHours}:${startMinutes}`;
-        document.getElementById('eventStart').value = startTime;
+        document.getElementById('startHour').value = startHours;
+        document.getElementById('startMinute').value = startMinutes;
         
         // Показываем дату
         selectedDateSpan.textContent = event.start.toLocaleDateString('ru-RU');
@@ -274,7 +250,15 @@ function openModal(event, startStr) {
         document.getElementById('eventClassType').value = '';
         
         // Время из клика или пустое (без значения по умолчанию)
-        document.getElementById('eventStart').value = selectedTime || '';
+        if (selectedTime) {
+            // Разбираем время из selectedTime (формат "YYYY-MM-DDTHH:MM")
+            const timeParts = selectedTime.split('T')[1].split(':');
+            document.getElementById('startHour').value = timeParts[0];
+            document.getElementById('startMinute').value = timeParts[1];
+        } else {
+            document.getElementById('startHour').value = '';
+            document.getElementById('startMinute').value = '';
+        }
         
         // Показываем выбранную дату
         if (selectedDate) {
@@ -311,112 +295,26 @@ function closeModal() {
     document.getElementById('class-tab').classList.add('active');
 }
 
-// Переменные для кастомного выбора времени
-let selectedHour = null;
-let selectedMinute = null;
-
-// Инициализация столбцов часов и минут
-function initTimePicker() {
-    const hoursColumn = document.getElementById('hoursColumn');
-    const minutesColumn = document.getElementById('minutesColumn');
+// Инициализация выпадающих списков часов и минут (08-20 часы, 00-50 минуты с шагом 10)
+function initTimeSelects() {
+    const startHour = document.getElementById('startHour');
+    const startMinute = document.getElementById('startMinute');
     
-    // Генерация часов (08-20) - только рабочие часы студии
+    // Генерация часов (08-20)
     for (let h = 8; h <= 20; h++) {
-        const hourBtn = document.createElement('div');
-        hourBtn.textContent = h.toString().padStart(2, '0');
-        hourBtn.style.cssText = 'padding: 8px; text-align: center; background: #f0f0f0; border-radius: 4px; cursor: pointer; user-select: none;';
-        hourBtn.addEventListener('click', function() {
-            // Снимаем выделение с других часов
-            document.querySelectorAll('#hoursColumn div').forEach(el => el.style.background = '#f0f0f0');
-            // Выделяем выбранный час
-            hourBtn.style.background = '#4CAF50';
-            hourBtn.style.color = 'white';
-            selectedHour = h.toString().padStart(2, '0');
-            // Если минуты уже выбраны, автоматически применяем время и закрываем окно
-            if (selectedMinute !== null) {
-                applyTimeSelection();
-            }
-        });
-        hoursColumn.appendChild(hourBtn);
+        const option = document.createElement('option');
+        option.value = h.toString().padStart(2, '0');
+        option.textContent = h.toString().padStart(2, '0');
+        startHour.appendChild(option);
     }
     
-    // Генерация минут (0-55 с шагом 5)
-    for (let m = 0; m < 60; m += 5) {
-        const minuteBtn = document.createElement('div');
-        minuteBtn.textContent = m.toString().padStart(2, '0');
-        minuteBtn.style.cssText = 'padding: 8px; text-align: center; background: #f0f0f0; border-radius: 4px; cursor: pointer; user-select: none;';
-        minuteBtn.addEventListener('click', function() {
-            // Снимаем выделение с других минут
-            document.querySelectorAll('#minutesColumn div').forEach(el => el.style.background = '#f0f0f0');
-            // Выделяем выбранную минуту
-            minuteBtn.style.background = '#4CAF50';
-            minuteBtn.style.color = 'white';
-            selectedMinute = m.toString().padStart(2, '0');
-            // Если часы уже выбраны, автоматически применяем время и закрываем окно
-            if (selectedHour !== null) {
-                applyTimeSelection();
-            }
-        });
-        minutesColumn.appendChild(minuteBtn);
+    // Генерация минут (00-50 с шагом 10)
+    for (let m = 0; m < 60; m += 10) {
+        const option = document.createElement('option');
+        option.value = m.toString().padStart(2, '0');
+        option.textContent = m.toString().padStart(2, '0');
+        startMinute.appendChild(option);
     }
-}
-
-// Открытие модального окна выбора времени
-function openTimePicker() {
-    const timePickerModal = document.getElementById('timePickerModal');
-    const eventStartInput = document.getElementById('eventStart');
-    
-    // ВСЕГДА сбрасываем выбор при открытии - пользователь должен выбрать оба значения заново
-    selectedHour = null;
-    selectedMinute = null;
-    document.querySelectorAll('#hoursColumn div, #minutesColumn div').forEach(el => {
-        el.style.background = '#f0f0f0';
-        el.style.color = 'black';
-    });
-    
-    // Если в поле уже есть время, визуально выделяем соответствующие кнопки
-    // но НЕ устанавливаем selectedHour/selectedMinute - это позволит требовать явного выбора
-    const hasExistingValue = eventStartInput.value.trim() !== '';
-    if (hasExistingValue) {
-        const parts = eventStartInput.value.split(':');
-        if (parts.length === 2) {
-            // Только визуальное выделение, без установки переменных выбора
-            document.querySelectorAll('#hoursColumn div').forEach(el => {
-                if (el.textContent === parts[0]) {
-                    el.style.background = '#4CAF50';
-                    el.style.color = 'white';
-                } else {
-                    el.style.background = '#f0f0f0';
-                    el.style.color = 'black';
-                }
-            });
-            document.querySelectorAll('#minutesColumn div').forEach(el => {
-                if (el.textContent === parts[1]) {
-                    el.style.background = '#4CAF50';
-                    el.style.color = 'white';
-                } else {
-                    el.style.background = '#f0f0f0';
-                    el.style.color = 'black';
-                }
-            });
-        }
-    }
-    
-    timePickerModal.style.display = 'block';
-}
-
-// Закрытие модального окна выбора времени
-function closeTimePicker() {
-    document.getElementById('timePickerModal').style.display = 'none';
-}
-
-// Применение выбранного времени
-function applyTimeSelection() {
-    if (selectedHour !== null && selectedMinute !== null) {
-        const eventStartInput = document.getElementById('eventStart');
-        eventStartInput.value = `${selectedHour}:${selectedMinute}`;
-    }
-    closeTimePicker();
 }
 
 function formatDateTime(date) {
@@ -434,9 +332,14 @@ function formatDateTime(date) {
 function saveEvent() {
     const eventId = document.getElementById('eventId').value;
     
+    // Собираем время из двух выпадающих списков
+    const hour = document.getElementById('startHour').value;
+    const minute = document.getElementById('startMinute').value;
+    const timeValue = `${hour}:${minute}`;
+    
     const data = {
         class_type_id: parseInt(document.getElementById('eventClassType').value),
-        start: document.getElementById('eventStart').value,
+        start: timeValue,
         duration: parseInt(document.getElementById('eventDuration').value),
         hall_id: document.getElementById('eventHall').value || null,
         max_participants: parseInt(document.getElementById('eventMaxParticipants').value),
@@ -446,17 +349,9 @@ function saveEvent() {
     // Если создаем новое событие, используем дату из клика по календарю
     if (!eventId) {
         if (selectedDateFromClick) {
-            // selectedDateFromClick имеет формат YYYY-MM-DDTHH:MM
-            // Но нам нужно использовать время из поля eventStart, если оно было изменено
-            const timeFromInput = document.getElementById('eventStart').value;
-            if (timeFromInput) {
-                // Берем дату из selectedDateFromClick и время из input
-                const datePart = selectedDateFromClick.slice(0, 10); // YYYY-MM-DD
-                data.start = `${datePart}T${timeFromInput}`;
-            } else {
-                // Если время не выбрано, используем время из клика
-                data.start = selectedDateFromClick;
-            }
+            // Берем дату из selectedDateFromClick и время из выпадающих списков
+            const datePart = selectedDateFromClick.slice(0, 10); // YYYY-MM-DD
+            data.start = `${datePart}T${timeValue}`;
         } else {
             const today = new Date();
             // Используем локальную дату вместо UTC

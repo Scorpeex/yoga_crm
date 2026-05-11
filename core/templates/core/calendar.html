@@ -45,32 +45,15 @@
                         
                         <div class="form-group">
                             <label for="eventStart">Время начала *</label>
-                            <div style="position: relative;">
-                                <input type="text" id="eventStart" required style="height: 40px; font-size: 16px; cursor: pointer;" readonly placeholder="Нажмите для выбора времени">
-                                <small style="color: #666; display: block; margin-top: 5px;">Дата: <span id="selectedDate"></span></small>
+                            <div style="display: flex; gap: 10px;">
+                                <select id="startHour" required style="flex: 1; height: 40px; font-size: 16px;">
+                                    <option value="">Часы</option>
+                                </select>
+                                <select id="startMinute" required style="flex: 1; height: 40px; font-size: 16px;">
+                                    <option value="">Минуты</option>
+                                </select>
                             </div>
-                        </div>
-                        
-                        <!-- Кастомное модальное окно выбора времени -->
-                        <div id="timePickerModal" class="modal" style="z-index: 1001;">
-                            <div class="modal-content" style="max-width: 350px; margin: 15% auto;">
-                                <span class="close" id="closeTimePicker">&times;</span>
-                                <h3>Выберите время</h3>
-                                <div style="display: flex; gap: 20px; margin-top: 20px;">
-                                    <div style="flex: 1;">
-                                        <label>Часы</label>
-                                        <div id="hoursColumn" style="display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto;"></div>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <label>Минуты</label>
-                                        <div id="minutesColumn" style="display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto;"></div>
-                                    </div>
-                                </div>
-                                <div class="button-group" style="margin-top: 20px;">
-                                    <button type="button" id="confirmTimeBtn" class="btn btn-primary">OK</button>
-                                    <button type="button" id="cancelTimeBtn" class="btn btn-secondary">Отмена</button>
-                                </div>
-                            </div>
+                            <small style="color: #666; display: block; margin-top: 5px;">Дата: <span id="selectedDate"></span></small>
                         </div>
                         
                         <div class="form-group">
