@@ -238,4 +238,94 @@
     }
 }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const phoneInput = document.getElementById('id_phone');
+    if (!phoneInput) return;
+    
+    // Маска для телефона: +7 (___) ___-__-__
+    const formatPhone = (value) => {
+        // Удаляем все нецифровые символы
+        let digits = value.replace(/\D/g, '');
+        
+        // Если начинается с 8, заменяем на 7
+        if (digits.startsWith('8')) {
+            digits = '7' + digits.slice(1);
+        }
+        
+        // Оставляем только первые 11 цифр (7 + 10 цифр номера)
+        digits = digits.slice(0, 11);
+        
+        // Форматируем: +7 (XXX) XXX-XX-XX
+        if (digits.length === 0) return '';
+        if (digits.length === 1) return '+7';
+        if (digits.length <= 4) return '+7 (' + digits.slice(1);
+        if (digits.length <= 7) return '+7 (' + digits.slice(1, 4) + ') ' + digits.slice(4);
+        if (digits.length <= 9) return '+7 (' + digits.slice(1, 4) + ') ' + digits.slice(4, 7) + '-' + digits.slice(7);
+        if (digits.length <= 11) return '+7 (' + digits.slice(1, 4) + ') ' + digits.slice(4, 7) + '-' + digits.slice(7, 9) + '-' + digits.slice(9);
+        
+        return '+7 (' + digits.slice(1, 4) + ') ' + digits.slice(4, 7) + '-' + digits.slice(7, 9) + '-' + digits.slice(9, 11);
+    };
+    
+    // Обработчик ввода
+    phoneInput.addEventListener('input', function(e) {
+        const cursorPosition = this.selectionStart;
+        const oldValue = this.value;
+        const formattedValue = formatPhone(oldValue);
+        
+        this.value = formattedValue;
+        
+        // Корректировка позиции курсора
+        const diff = formattedValue.length - oldValue.length;
+        if (cursorPosition > 0 && formattedValue.length >= cursorPosition) {
+            this.selectionStart = this.selectionEnd = Math.min(cursorPosition + diff, formattedValue.length);
+        }
+    });
+    
+    // Обработчик удаления (backspace)
+    phoneInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' || e.key === 'Delete') {
+            setTimeout(() => {
+                let value = this.value;
+                // При удалении удаляем форматирование и оставляем только цифры
+                let digits = value.replace(/\D/g, '');
+                if (digits.startsWith('8')) {
+                    digits = '7' + digits.slice(1);
+                }
+                digits = digits.slice(0, 11);
+                this.value = formatPhone(digits);
+            }, 0);
+        }
+    });
+    
+    // Обработчик фокуса - показываем полную маску
+    phoneInput.addEventListener('focus', function() {
+        if (!this.value) {
+            this.value = '+7 (';
+        }
+    });
+    
+    // Обработчик потери фокуса - валидация
+    phoneInput.addEventListener('blur', function() {
+        let value = this.value;
+        let digits = value.replace(/\D/g, '');
+        
+        if (digits.startsWith('8')) {
+            digits = '7' + digits.slice(1);
+        }
+        
+        // Проверяем, что введено ровно 11 цифр
+        if (digits.length !== 11 || !digits.startsWith('7')) {
+            this.value = '';
+        } else {
+            this.value = formatPhone(digits);
+        }
+    });
+    
+    // Инициализация поля при загрузке
+    if (phoneInput.value) {
+        phoneInput.value = formatPhone(phoneInput.value);
+    }
+});
+</script>
 {% endblock %}
