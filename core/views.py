@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
 from datetime import datetime, timedelta
+from django.utils import timezone
 import pytz
 from .models import ClassSession, Hall, ClassType, Client, Attendance
 from .forms import RegistrationForm, LoginForm
