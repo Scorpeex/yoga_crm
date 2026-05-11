@@ -5,24 +5,33 @@ __pycache__/
 *.pyo
 *.pyd
 
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
 # Build artifacts
-dist/
-build/
-*.egg-info/
+staticfiles/
+media/
 
 # Environment
-.venv/
-venv/
 .env
 .env.local
-*.env.*
-
-# Logs
-*.log
+.env.*
+!.env.example
 
 # Editors
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# Dependencies
+venv/
+.venv/
+pip-log.txt
+pip-selfcheck.json
 
 # OS
 .DS_Store

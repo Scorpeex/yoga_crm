@@ -341,7 +341,8 @@ def get_attendance(request, session_id):
                 'client_phone': attendance.client.phone or '',
                 'attended': attendance.status == 'attended',
                 'is_current_user': attendance.client_id == current_user_client_id,
-                'max_participants': session.max_participants
+                'max_participants': session.max_participants,
+                'role': attendance.client.role
             }
             attendance_list.append(attendance_data)
         
@@ -511,7 +512,8 @@ def add_client_to_session(request, session_id):
             'client': {
                 'id': client.id,
                 'name': f"{user.last_name if user else ''} {user.first_name if user else ''}".strip(),
-                'phone': client.phone or ''
+                'phone': client.phone or '',
+                'role': client.role
             }
         })
     except Exception as e:
@@ -548,7 +550,8 @@ def search_clients(request):
             client_list.append({
                 'id': client.id,
                 'name': f"{user.last_name if user else ''} {user.first_name if user else ''}".strip(),
-                'phone': client.phone or ''
+                'phone': client.phone or '',
+                'role': client.role
             })
         
         return JsonResponse({'clients': client_list})
