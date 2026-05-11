@@ -410,7 +410,9 @@ def enroll_to_class(request, session_id):
         
         # Проверяем время до занятия (не менее 4 часов)
         now = timezone.now()
-        time_until_class = session.start_time - now
+        # Приводим date_time к timezone-aware для сравнения
+        session_time = timezone.make_aware(session.date_time) if timezone.is_naive(session.date_time) else session.date_time
+        time_until_class = session_time - now
         if time_until_class.total_seconds() < 4 * 3600:  # 4 часа в секундах
             return JsonResponse({'error': 'Запись возможна не позднее чем за 4 часа до начала занятия'}, status=400)
         
@@ -450,7 +452,9 @@ def cancel_enrollment(request, session_id):
         
         # Проверяем время до занятия (не менее 4 часов)
         now = timezone.now()
-        time_until_class = session.start_time - now
+        # Приводим date_time к timezone-aware для сравнения
+        session_time = timezone.make_aware(session.date_time) if timezone.is_naive(session.date_time) else session.date_time
+        time_until_class = session_time - now
         if time_until_class.total_seconds() < 4 * 3600:  # 4 часа в секундах
             return JsonResponse({'error': 'Отмена записи возможна не позднее чем за 4 часа до начала занятия'}, status=400)
         
