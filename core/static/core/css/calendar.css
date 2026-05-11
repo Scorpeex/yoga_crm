@@ -336,9 +336,16 @@ input:focus, select:focus, textarea:focus {
     margin-bottom: 20px;
 }
 
+.capacity-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+}
+
 .capacity-container {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     width: 100%;
 }
 
@@ -358,6 +365,7 @@ input:focus, select:focus, textarea:focus {
     align-items: center;
     justify-content: center;
     min-width: 0;
+    width: auto;
 }
 
 .capacity-btn:hover {
@@ -377,4 +385,6 @@ input:focus, select:focus, textarea:focus {
     font-size: 14px;
     text-align: center;
     min-width: 0;
+    width: auto;
+    padding: 0;
 }
