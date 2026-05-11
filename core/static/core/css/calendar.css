@@ -332,9 +332,15 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* Стили для кнопок выбора вместимости */
+.capacity-container {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+}
+
 .capacity-btn {
-    width: 40px;
-    height: 36px;
+    flex: 1;
+    height: 42px;
     border: 1px solid #ddd;
     border-radius: 4px;
     background-color: white;
@@ -347,6 +353,7 @@ input:focus, select:focus, textarea:focus {
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 36px;
 }
 
 .capacity-btn:hover {
@@ -358,4 +365,12 @@ input:focus, select:focus, textarea:focus {
     background-color: #4CAF50;
     color: white;
     border-color: #4CAF50;
+}
+
+#eventMaxParticipants {
+    flex: 1;
+    height: 42px;
+    font-size: 14px;
+    text-align: center;
+    min-width: 50px;
 }
