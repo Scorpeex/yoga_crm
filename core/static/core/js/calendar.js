@@ -152,6 +152,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Обработчики для кнопок выбора вместимости
+    document.querySelectorAll('.capacity-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Снимаем активный класс со всех кнопок
+            document.querySelectorAll('.capacity-btn').forEach(b => b.classList.remove('active'));
+            // Добавляем активный класс нажатой кнопке
+            this.classList.add('active');
+            // Устанавливаем значение в поле ввода
+            document.getElementById('eventMaxParticipants').value = this.getAttribute('data-value');
+        });
+    });
+    
+    // При вводе значения в поле вручную - снимаем выделение с кнопок
+    document.getElementById('eventMaxParticipants').addEventListener('input', function() {
+        document.querySelectorAll('.capacity-btn').forEach(b => b.classList.remove('active'));
+    });
+    
+    // Функция для обновления состояния кнопок вместимости
+    function updateCapacityButtons(value) {
+        document.querySelectorAll('.capacity-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-value') === value.toString()) {
+                btn.classList.add('active');
+            }
+        });
+    }
+    
     // Обработчики вкладок
     initTabs();
 });
@@ -225,7 +252,9 @@ function openModal(event, startStr) {
         selectedDateSpan.textContent = event.start.toLocaleDateString('ru-RU');
         
         document.getElementById('eventDuration').value = event.extendedProps.duration || 60;
-        document.getElementById('eventMaxParticipants').value = event.extendedProps.max_participants || 20;
+        const maxParticipants = event.extendedProps.max_participants || 20;
+        document.getElementById('eventMaxParticipants').value = maxParticipants;
+        updateCapacityButtons(maxParticipants);
         document.getElementById('eventHall').value = event.extendedProps.hall_id || '';
         
         // Повторяющееся событие
@@ -276,6 +305,7 @@ function openModal(event, startStr) {
         
         document.getElementById('eventDuration').value = 60;
         document.getElementById('eventMaxParticipants').value = 20;
+        updateCapacityButtons(20);
         document.getElementById('eventHall').value = '';
         document.getElementById('eventRecurring').checked = false;
         deleteBtn.removeAttribute('data-is-recurring');
