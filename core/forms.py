@@ -83,7 +83,8 @@ class LoginForm(AuthenticationForm):
         label="Телефон",
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Введите номер телефона'
+            'placeholder': '+7 (___) ___-__-__',
+            'id': 'id_username'
         })
     )
     password = forms.CharField(
