@@ -1,18 +1,11 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
+import re
 
 
 class RegistrationForm(UserCreationForm):
     """Форма регистрации нового пользователя"""
-    email = forms.EmailField(
-        label="Email",
-        required=True,
-        widget=forms.EmailInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Введите ваш email'
-        })
-    )
     first_name = forms.CharField(
         label="Имя",
         required=True,
@@ -31,21 +24,19 @@ class RegistrationForm(UserCreationForm):
     )
     phone = forms.CharField(
         label="Телефон",
-        required=False,
+        required=True,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': '+7 (___) ___-__-__'
-        })
+            'placeholder': '+7 (___) ___-__-__',
+            'id': 'id_phone'
+        }),
+        help_text="Введите номер телефона в формате +7XXXXXXXXXX"
     )
 
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'email', 'phone', 'password1', 'password2')
+        fields = ('first_name', 'last_name', 'phone', 'password1', 'password2')
         widgets = {
-            'username': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Логин'
-            }),
             'password1': forms.PasswordInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Пароль'
@@ -58,18 +49,41 @@ class RegistrationForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['username'].label = "Логин"
         self.fields['password1'].label = "Пароль"
         self.fields['password2'].label = "Подтверждение пароля"
+    
+    def clean_phone(self):
+        """Очистка и валидация номера телефона"""
+        phone = self.cleaned_data.get('phone')
+        if not phone:
+            raise forms.ValidationError("Номер телефона обязателен")
+        
+        # Удаляем все нецифровые символы кроме +
+        cleaned_phone = re.sub(r'[^\d+]', '', phone)
+        
+        # Если номер начинается с 8, заменяем на +7
+        if cleaned_phone.startswith('8') and len(cleaned_phone) == 11:
+            cleaned_phone = '+7' + cleaned_phone[1:]
+        
+        # Проверяем формат +7XXXXXXXXXX (12 символов: +7 + 10 цифр)
+        if not re.match(r'^\+7\d{10}$', cleaned_phone):
+            raise forms.ValidationError("Неверный формат телефона. Используйте формат +7XXXXXXXXXX")
+        
+        # Проверяем уникальность телефона
+        existing_users = User.objects.filter(username=cleaned_phone)
+        if existing_users.exists():
+            raise forms.ValidationError("Пользователь с таким номером телефона уже зарегистрирован")
+        
+        return cleaned_phone
 
 
 class LoginForm(AuthenticationForm):
     """Форма входа для существующих пользователей"""
     username = forms.CharField(
-        label="Логин или Email",
+        label="Телефон",
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Введите логин или email'
+            'placeholder': 'Введите номер телефона'
         })
     )
     password = forms.CharField(

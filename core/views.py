@@ -415,15 +415,15 @@ def register_view(request):
         if form.is_valid():
             with transaction.atomic():
                 user = form.save(commit=False)
-                user.email = form.cleaned_data.get('email')
+                # Используем номер телефона как username (логин)
+                user.username = form.cleaned_data.get('phone')
                 user.first_name = form.cleaned_data.get('first_name')
                 user.last_name = form.cleaned_data.get('last_name')
                 user.save()
                 
                 # Сохраняем телефон в профиль клиента
-                phone = form.cleaned_data.get('phone')
-                if hasattr(user, 'client_profile') and phone:
-                    user.client_profile.phone = phone
+                if hasattr(user, 'client_profile'):
+                    user.client_profile.phone = user.username
                     user.client_profile.save()
                 
                 login(request, user)
@@ -442,18 +442,18 @@ def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
-            username_or_email = form.cleaned_data.get('username')
+            phone = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
             
-            # Пробуем найти пользователя по email если это не username
-            if '@' in username_or_email:
-                try:
-                    user = User.objects.get(email=username_or_email)
-                    username_or_email = user.username
-                except User.DoesNotExist:
-                    pass
+            # Очищаем номер телефона от форматирования
+            import re
+            cleaned_phone = re.sub(r'[^\d+]', '', phone)
             
-            user = authenticate(request, username=username_or_email, password=password)
+            # Если номер начинается с 8, заменяем на +7
+            if cleaned_phone.startswith('8') and len(cleaned_phone) == 11:
+                cleaned_phone = '+7' + cleaned_phone[1:]
+            
+            user = authenticate(request, username=cleaned_phone, password=password)
             if user is not None:
                 login(request, user)
                 next_url = request.GET.get('next', 'calendar')
