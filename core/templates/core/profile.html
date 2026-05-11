@@ -6,7 +6,6 @@
         <h1>Личный кабинет</h1>
         <div class="user-info">
             <span class="user-name">{{ client.user.first_name }} {{ client.user.last_name }}</span>
-            <span class="user-email">{{ client.user.email }}</span>
             {% if client.phone %}
                 <span class="user-phone">{{ client.phone }}</span>
             {% endif %}
