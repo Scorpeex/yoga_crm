@@ -13,8 +13,8 @@ class ClassTypeAdmin(admin.ModelAdmin):
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
-    list_display = ['get_last_name', 'get_first_name', 'phone', 'get_email', 'is_active', 'created_at']
-    list_filter = ['is_active', 'created_at']
+    list_display = ['get_last_name', 'get_first_name', 'phone', 'role', 'is_active', 'created_at']
+    list_filter = ['is_active', 'created_at', 'role']
     search_fields = ['user__first_name', 'user__last_name', 'user__email', 'phone']
     ordering = ['user__last_name', 'user__first_name']
     
@@ -25,10 +25,6 @@ class ClientAdmin(admin.ModelAdmin):
     def get_first_name(self, obj):
         return obj.user.first_name
     get_first_name.short_description = 'Имя'
-    
-    def get_email(self, obj):
-        return obj.user.email
-    get_email.short_description = 'Email'
 
 
 @admin.register(Hall)
