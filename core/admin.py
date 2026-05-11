@@ -13,10 +13,22 @@ class ClassTypeAdmin(admin.ModelAdmin):
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
-    list_display = ['last_name', 'first_name', 'phone', 'email', 'is_active', 'created_at']
+    list_display = ['get_last_name', 'get_first_name', 'phone', 'get_email', 'is_active', 'created_at']
     list_filter = ['is_active', 'created_at']
-    search_fields = ['first_name', 'last_name', 'phone', 'email']
-    ordering = ['last_name', 'first_name']
+    search_fields = ['user__first_name', 'user__last_name', 'user__email', 'phone']
+    ordering = ['user__last_name', 'user__first_name']
+    
+    def get_last_name(self, obj):
+        return obj.user.last_name
+    get_last_name.short_description = 'Фамилия'
+    
+    def get_first_name(self, obj):
+        return obj.user.first_name
+    get_first_name.short_description = 'Имя'
+    
+    def get_email(self, obj):
+        return obj.user.email
+    get_email.short_description = 'Email'
 
 
 @admin.register(Hall)

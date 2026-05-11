@@ -2,9 +2,14 @@ import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.db import transaction
 from datetime import datetime, timedelta
 import pytz
 from .models import ClassSession, Hall, ClassType, Client, Attendance
+from .forms import RegistrationForm, LoginForm
 from django.db.models import Q
 
 
@@ -398,4 +403,99 @@ def search_clients(request):
         return JsonResponse({'clients': client_list})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+
+def register_view(request):
+    """Страница регистрации нового пользователя"""
+    if request.user.is_authenticated:
+        return redirect('calendar')
+    
+    if request.method == 'POST':
+        form = RegistrationForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                user = form.save(commit=False)
+                user.email = form.cleaned_data.get('email')
+                user.first_name = form.cleaned_data.get('first_name')
+                user.last_name = form.cleaned_data.get('last_name')
+                user.save()
+                
+                # Сохраняем телефон в профиль клиента
+                phone = form.cleaned_data.get('phone')
+                if hasattr(user, 'client_profile') and phone:
+                    user.client_profile.phone = phone
+                    user.client_profile.save()
+                
+                login(request, user)
+                return redirect('calendar')
+    else:
+        form = RegistrationForm()
+    
+    return render(request, 'core/register.html', {'form': form})
+
+
+def login_view(request):
+    """Страница входа для существующих пользователей"""
+    if request.user.is_authenticated:
+        return redirect('calendar')
+    
+    if request.method == 'POST':
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            username_or_email = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            
+            # Пробуем найти пользователя по email если это не username
+            if '@' in username_or_email:
+                try:
+                    user = User.objects.get(email=username_or_email)
+                    username_or_email = user.username
+                except User.DoesNotExist:
+                    pass
+            
+            user = authenticate(request, username=username_or_email, password=password)
+            if user is not None:
+                login(request, user)
+                next_url = request.GET.get('next', 'calendar')
+                return redirect(next_url)
+    else:
+        form = LoginForm()
+    
+    return render(request, 'core/login.html', {'form': form})
+
+
+@login_required
+def logout_view(request):
+    """Выход из системы"""
+    logout(request)
+    return redirect('login')
+
+
+@login_required
+def profile_view(request):
+    """Личный кабинет пользователя"""
+    client = get_object_or_404(Client, user=request.user)
+    
+    # Получаем будущие занятия, на которые записан клиент
+    from django.utils import timezone
+    upcoming_sessions = ClassSession.objects.filter(
+        attendance__client=client,
+        date_time__gte=timezone.now(),
+        attendance__status='attended'
+    ).select_related('class_type', 'hall').order_by('date_time')[:10]
+    
+    # Получаем историю посещений
+    past_sessions = ClassSession.objects.filter(
+        attendance__client=client,
+        date_time__lt=timezone.now(),
+        attendance__status='attended'
+    ).select_related('class_type', 'hall').order_by('-date_time')[:20]
+    
+    context = {
+        'client': client,
+        'upcoming_sessions': upcoming_sessions,
+        'past_sessions': past_sessions,
+    }
+    return render(request, 'core/profile.html', context)
+
 
