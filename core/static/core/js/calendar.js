@@ -250,14 +250,15 @@ function openModal(event, startStr) {
         document.getElementById('eventClassType').value = '';
         
         // Время из клика или пустое (без значения по умолчанию)
-        if (selectedTime) {
+        if (selectedTime && selectedTime.includes('T')) {
             // Разбираем время из selectedTime (формат "YYYY-MM-DDTHH:MM")
             const timeParts = selectedTime.split('T')[1].split(':');
             document.getElementById('startHour').value = timeParts[0];
             document.getElementById('startMinute').value = timeParts[1];
         } else {
-            document.getElementById('startHour').value = '';
-            document.getElementById('startMinute').value = '';
+            // Значения по умолчанию: 09:00
+            document.getElementById('startHour').value = '09';
+            document.getElementById('startMinute').value = '00';
         }
         
         // Показываем выбранную дату
