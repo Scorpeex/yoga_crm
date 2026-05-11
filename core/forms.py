@@ -99,3 +99,22 @@ class LoginForm(AuthenticationForm):
         super().__init__(*args, **kwargs)
         self.fields['username'].label = ""
         self.fields['password'].label = ""
+    
+    def clean_username(self):
+        """Очистка номера телефона от форматирования"""
+        phone = self.cleaned_data.get('username')
+        if not phone:
+            raise forms.ValidationError("Номер телефона обязателен")
+        
+        # Удаляем все нецифровые символы кроме +
+        cleaned_phone = re.sub(r'[^\d+]', '', phone)
+        
+        # Если номер начинается с 8, заменяем на +7
+        if cleaned_phone.startswith('8') and len(cleaned_phone) == 11:
+            cleaned_phone = '+7' + cleaned_phone[1:]
+        
+        # Проверяем формат +7XXXXXXXXXX (12 символов: +7 + 10 цифр)
+        if not re.match(r'^\+7\d{10}$', cleaned_phone):
+            raise forms.ValidationError("Неверный формат телефона. Используйте формат +7XXXXXXXXXX")
+        
+        return cleaned_phone
