@@ -366,47 +366,40 @@ function openTimePicker() {
     const timePickerModal = document.getElementById('timePickerModal');
     const eventStartInput = document.getElementById('eventStart');
     
-    // Сбрасываем предыдущий выбор только если поле пустое
-    const hasExistingValue = eventStartInput.value.trim() !== '';
+    // ВСЕГДА сбрасываем выбор при открытии - пользователь должен выбрать оба значения заново
+    selectedHour = null;
+    selectedMinute = null;
+    document.querySelectorAll('#hoursColumn div, #minutesColumn div').forEach(el => {
+        el.style.background = '#f0f0f0';
+        el.style.color = 'black';
+    });
     
-    if (!hasExistingValue) {
-        // При первом открытии (пустое поле) сбрасываем выбор
-        selectedHour = null;
-        selectedMinute = null;
-        document.querySelectorAll('#hoursColumn div, #minutesColumn div').forEach(el => {
-            el.style.background = '#f0f0f0';
-            el.style.color = 'black';
-        });
-    } else {
-        // Если есть значение, оставляем его как выбранный
+    // Если в поле уже есть время, визуально выделяем соответствующие кнопки
+    // но НЕ устанавливаем selectedHour/selectedMinute - это позволит требовать явного выбора
+    const hasExistingValue = eventStartInput.value.trim() !== '';
+    if (hasExistingValue) {
         const parts = eventStartInput.value.split(':');
         if (parts.length === 2) {
-            selectedHour = parts[0];
-            selectedMinute = parts[1];
+            // Только визуальное выделение, без установки переменных выбора
+            document.querySelectorAll('#hoursColumn div').forEach(el => {
+                if (el.textContent === parts[0]) {
+                    el.style.background = '#4CAF50';
+                    el.style.color = 'white';
+                } else {
+                    el.style.background = '#f0f0f0';
+                    el.style.color = 'black';
+                }
+            });
+            document.querySelectorAll('#minutesColumn div').forEach(el => {
+                if (el.textContent === parts[1]) {
+                    el.style.background = '#4CAF50';
+                    el.style.color = 'white';
+                } else {
+                    el.style.background = '#f0f0f0';
+                    el.style.color = 'black';
+                }
+            });
         }
-    }
-    
-    // Если есть время в поле, предварительно выбираем его (визуально выделяем)
-    if (hasExistingValue && selectedHour && selectedMinute) {
-        // Находим и выделяем соответствующие кнопки
-        document.querySelectorAll('#hoursColumn div').forEach(el => {
-            if (el.textContent === selectedHour) {
-                el.style.background = '#4CAF50';
-                el.style.color = 'white';
-            } else {
-                el.style.background = '#f0f0f0';
-                el.style.color = 'black';
-            }
-        });
-        document.querySelectorAll('#minutesColumn div').forEach(el => {
-            if (el.textContent === selectedMinute) {
-                el.style.background = '#4CAF50';
-                el.style.color = 'white';
-            } else {
-                el.style.background = '#f0f0f0';
-                el.style.color = 'black';
-            }
-        });
     }
     
     timePickerModal.style.display = 'block';
