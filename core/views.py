@@ -408,7 +408,7 @@ def search_clients(request):
 def register_view(request):
     """Страница регистрации нового пользователя"""
     if request.user.is_authenticated:
-        return redirect('calendar')
+        return redirect('profile')
     
     if request.method == 'POST':
         form = RegistrationForm(request.POST)
@@ -427,7 +427,7 @@ def register_view(request):
                     user.client_profile.save()
                 
                 login(request, user)
-                return redirect('calendar')
+                return redirect('profile')
     else:
         form = RegistrationForm()
     
@@ -437,7 +437,7 @@ def register_view(request):
 def login_view(request):
     """Страница входа для существующих пользователей"""
     if request.user.is_authenticated:
-        return redirect('calendar')
+        return redirect('profile')
     
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
@@ -456,7 +456,7 @@ def login_view(request):
             user = authenticate(request, username=cleaned_phone, password=password)
             if user is not None:
                 login(request, user)
-                next_url = request.GET.get('next', 'calendar')
+                next_url = request.GET.get('next', 'profile')
                 return redirect(next_url)
     else:
         form = LoginForm()
