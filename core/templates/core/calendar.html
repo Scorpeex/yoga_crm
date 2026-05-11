@@ -22,8 +22,8 @@
             
             <!-- Вкладки -->
             <div class="tabs">
-                <button class="tab-btn active" data-tab="class-tab">Занятие</button>
-                <button class="tab-btn" data-tab="attendance-tab">Посещаемость</button>
+                <button class="tab-btn active" data-tab="class-tab" id="classTabBtn">Занятие</button>
+                <button class="tab-btn" data-tab="attendance-tab" id="attendanceTabBtn">Запись</button>
             </div>
             
             <!-- Содержимое вкладок -->
@@ -95,17 +95,17 @@
                         </div>
                         
                         <div class="button-group">
-                            <button type="submit" class="btn btn-primary">Сохранить</button>
+                            <button type="submit" class="btn btn-primary" id="saveEventBtn">Сохранить</button>
                             <button type="button" id="deleteBtn" class="btn btn-danger" style="display: none;">Удалить</button>
                             <button type="button" class="btn btn-secondary" onclick="closeModal()">Отмена</button>
                         </div>
                     </form>
                 </div>
                 
-                <!-- Вкладка "Посещаемость" -->
+                <!-- Вкладка "Запись" -->
                 <div id="attendance-tab" class="tab-pane">
                     <div id="attendanceContent">
-                        <p style="color: #666; text-align: center;">Сначала сохраните занятие, чтобы управлять посещаемостью</p>
+                        <p style="color: #666; text-align: center;">Сначала сохраните занятие, чтобы управлять записью</p>
                     </div>
                 </div>
             </div>
@@ -143,6 +143,10 @@
     </div>
 
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <script>
+        // Передаем роль пользователя в JavaScript
+        window.USER_ROLE = "{{ user_role }}";
+    </script>
     <script src="{% static 'core/js/calendar.js' %}"></script>
 </body>
 </html>
