@@ -251,7 +251,7 @@ function openModal(event, startStr) {
         // Редактирование существующего события
         currentEventId = event.id;
         currentSessionId = event.id; // Сохраняем ID сессии для посещаемости
-        modalTitle.textContent = 'Редактировать занятие';
+        modalTitle.textContent = isStaff ? 'Редактировать занятие' : 'Запись на занятие';
         document.getElementById('eventId').value = event.id;
         
         // Устанавливаем тип занятия (по названию ищем в списке)
@@ -644,13 +644,14 @@ function renderAttendanceList(attendances, forStudent = false) {
         html += '<p style="color: #999; font-style: italic;">Пока нет записанных клиентов</p>';
     } else {
         attendances.forEach(attendance => {
+            const roleBadge = attendance.role ? `<span class="role-badge" style="font-size: 10px; padding: 2px 6px; border-radius: 3px; background-color: ${attendance.role === 'admin' ? '#dc3545' : (attendance.role === 'moderator' ? '#ffc107' : '#6c757d')}; color: white; margin-left: 8px;">${attendance.role === 'admin' ? 'Админ' : (attendance.role === 'moderator' ? 'Модератор' : '')}</span>` : '';
             html += `
                 <div class="attendance-item">
                     ${isStaff ? `<input type="checkbox" id="client-${attendance.client_id}" 
                            data-client-id="${attendance.client_id}" 
                            ${attendance.attended ? 'checked' : ''}>` : ''}
                     <label for="client-${attendance.client_id}">
-                        <span class="client-name">${attendance.client_name}</span>
+                        <span class="client-name">${attendance.client_name}${roleBadge}</span>
                         ${attendance.client_phone ? `<span class="client-phone">${attendance.client_phone}</span>` : ''}
                     </label>
                 </div>

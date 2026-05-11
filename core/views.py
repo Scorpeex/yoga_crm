@@ -333,14 +333,16 @@ def get_attendance(request, session_id):
         
         attendance_list = []
         for attendance in attendances:
+            client_user = attendance.client.user
             attendance_data = {
                 'id': attendance.id,
                 'client_id': attendance.client.id,
-                'client_name': f"{attendance.client.last_name} {attendance.client.first_name}",
+                'client_name': f"{client_user.last_name if client_user else ''} {client_user.first_name if client_user else ''}".strip(),
                 'client_phone': attendance.client.phone or '',
                 'attended': attendance.status == 'attended',
                 'is_current_user': attendance.client_id == current_user_client_id,
-                'max_participants': session.max_participants
+                'max_participants': session.max_participants,
+                'role': attendance.client.role
             }
             attendance_list.append(attendance_data)
         
@@ -504,12 +506,14 @@ def add_client_to_session(request, session_id):
             status='attended'
         )
         
+        user = client.user
         return JsonResponse({
             'success': True,
             'client': {
                 'id': client.id,
-                'name': f"{client.last_name} {client.first_name}",
-                'phone': client.phone or ''
+                'name': f"{user.last_name if user else ''} {user.first_name if user else ''}".strip(),
+                'phone': client.phone or '',
+                'role': client.role
             }
         })
     except Exception as e:
@@ -535,17 +539,19 @@ def search_clients(request):
         
         # Ищем по фамилии, имени или телефону
         clients = Client.objects.filter(
-            Q(first_name__icontains=query) |
-            Q(last_name__icontains=query) |
+            Q(user__first_name__icontains=query) |
+            Q(user__last_name__icontains=query) |
             Q(phone__icontains=query)
         ).filter(is_active=True)[:10]  # Ограничиваем до 10 результатов
         
         client_list = []
         for client in clients:
+            user = client.user
             client_list.append({
                 'id': client.id,
-                'name': f"{client.last_name} {client.first_name}",
-                'phone': client.phone or ''
+                'name': f"{user.last_name if user else ''} {user.first_name if user else ''}".strip(),
+                'phone': client.phone or '',
+                'role': client.role
             })
         
         return JsonResponse({'clients': client_list})

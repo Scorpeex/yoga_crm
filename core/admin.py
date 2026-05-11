@@ -14,9 +14,10 @@ class ClassTypeAdmin(admin.ModelAdmin):
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
     list_display = ['get_last_name', 'get_first_name', 'phone', 'role', 'is_active', 'created_at']
-    list_filter = ['is_active', 'created_at', 'role']
+    list_filter = ['role', 'is_active', 'created_at']
     search_fields = ['user__first_name', 'user__last_name', 'user__email', 'phone']
     ordering = ['user__last_name', 'user__first_name']
+    list_editable = ['role']
     
     def get_last_name(self, obj):
         return obj.user.last_name
@@ -83,7 +84,8 @@ class YogaCRMAdminSite(admin.AdminSite):
     
     def index(self, request, extra_context=None):
         extra_context = extra_context or {}
-        extra_context['calendar_url'] = reverse('calendar')
+        extra_context['calendar_url'] = '/calendar/'
+        extra_context['profile_url'] = '/profile/'
         return super().index(request, extra_context)
 
 
