@@ -330,3 +330,32 @@ input:focus, select:focus, textarea:focus {
     gap: 10px;
     margin-top: 15px;
 }
+
+/* Стили для кнопок выбора вместимости */
+.capacity-btn {
+    width: 40px;
+    height: 36px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+    transition: all 0.2s;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.capacity-btn:hover {
+    background-color: #f5f5f5;
+    border-color: #bbb;
+}
+
+.capacity-btn.active {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+}
