@@ -41,7 +41,21 @@ def calendar_view(request):
     """Отображение календаря занятий"""
     halls = Hall.objects.all()
     class_types = ClassType.objects.all()
-    return render(request, 'core/calendar.html', {'halls': halls, 'class_types': class_types})
+    
+    # Проверяем права пользователя
+    is_moderator = False
+    is_admin = False
+    if request.user.is_authenticated and hasattr(request.user, 'client_profile'):
+        client = request.user.client_profile
+        is_moderator = client.is_moderator
+        is_admin = client.is_admin
+    
+    return render(request, 'core/calendar.html', {
+        'halls': halls,
+        'class_types': class_types,
+        'is_moderator': is_moderator,
+        'is_admin': is_admin,
+    })
 
 
 def get_events(request):
@@ -120,7 +134,15 @@ def get_events(request):
 
 @require_http_methods(["POST"])
 def create_event(request):
-    """Создание нового занятия"""
+    """Создание нового занятия (только для модераторов и админов)"""
+    # Проверка прав доступа
+    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    client = request.user.client_profile
+    if not client.is_moderator:
+        return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут создавать занятия'}, status=403)
+    
     try:
         data = json.loads(request.body)
         class_type_id = data.get('class_type_id')
@@ -197,7 +219,15 @@ def create_event(request):
 
 @require_http_methods(["POST", "PUT"])
 def update_event(request, event_id):
-    """Обновление существующего занятия"""
+    """Обновление существующего занятия (только для модераторов и админов)"""
+    # Проверка прав доступа
+    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    client = request.user.client_profile
+    if not client.is_moderator:
+        return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут редактировать занятия'}, status=403)
+    
     try:
         session = get_object_or_404(ClassSession, id=event_id)
         
@@ -243,7 +273,15 @@ def update_event(request, event_id):
 
 @require_http_methods(["POST"])
 def delete_event(request, event_id):
-    """Удаление занятия"""
+    """Удаление занятия (только для модераторов и админов)"""
+    # Проверка прав доступа
+    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    client = request.user.client_profile
+    if not client.is_moderator:
+        return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут удалять занятия'}, status=403)
+    
     try:
         session = get_object_or_404(ClassSession, id=event_id)
         
@@ -280,7 +318,24 @@ def get_attendance(request, session_id):
     try:
         session = get_object_or_404(ClassSession, id=session_id)
         
-        # Получаем всех клиентов, записанных на это занятие
+        # Проверка прав доступа - только модераторы могут видеть полные данные
+        is_moderator = False
+        if request.user.is_authenticated and hasattr(request.user, 'client_profile'):
+            client = request.user.client_profile
+            is_moderator = client.is_moderator
+        
+        # Если не модератор, возвращаем только количество записанных
+        if not is_moderator:
+            attendances = Attendance.objects.filter(session=session)
+            registered_count = attendances.count()
+            return JsonResponse({
+                'success': True,
+                'attendances': [],
+                'registered_count': registered_count,
+                'can_view_details': False
+            })
+        
+        # Получаем всех клиентов, записанных на это занятие (для модераторов)
         attendances = Attendance.objects.filter(session=session).select_related('client')
         
         # IDs клиентов, которые уже записаны
@@ -299,7 +354,8 @@ def get_attendance(request, session_id):
         return JsonResponse({
             'success': True,
             'attendances': attendance_list,
-            'registered_count': len(registered_client_ids)
+            'registered_count': len(registered_client_ids),
+            'can_view_details': True
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
@@ -307,7 +363,15 @@ def get_attendance(request, session_id):
 
 @require_http_methods(["POST"])
 def update_attendance(request, session_id):
-    """Обновление посещаемости для занятия"""
+    """Обновление посещаемости для занятия (только для модераторов и админов)"""
+    # Проверка прав доступа
+    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    client = request.user.client_profile
+    if not client.is_moderator:
+        return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут управлять посещаемостью'}, status=403)
+    
     try:
         session = get_object_or_404(ClassSession, id=session_id)
         data = json.loads(request.body)
@@ -341,7 +405,15 @@ def update_attendance(request, session_id):
 
 @require_http_methods(["POST"])
 def add_client_to_session(request, session_id):
-    """Добавление клиента на занятие вручную"""
+    """Добавление клиента на занятие вручную (только для модераторов и админов)"""
+    # Проверка прав доступа
+    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    client = request.user.client_profile
+    if not client.is_moderator:
+        return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут добавлять клиентов на занятия'}, status=403)
+    
     try:
         session = get_object_or_404(ClassSession, id=session_id)
         data = json.loads(request.body)
@@ -378,7 +450,15 @@ def add_client_to_session(request, session_id):
 
 @require_http_methods(["GET"])
 def search_clients(request):
-    """Поиск клиентов по имени/фамилии/телефону"""
+    """Поиск клиентов по имени/фамилии/телефону (только для модераторов и админов)"""
+    # Проверка прав доступа
+    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
+    
+    client = request.user.client_profile
+    if not client.is_moderator:
+        return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут искать клиентов'}, status=403)
+    
     try:
         query = request.GET.get('q', '')
         
@@ -488,6 +568,8 @@ def profile_view(request):
         'client': client,
         'upcoming_sessions': upcoming_sessions,
         'past_sessions': past_sessions,
+        'is_moderator': client.is_moderator,
+        'is_admin': client.is_admin,
     }
     return render(request, 'core/profile.html', context)
 

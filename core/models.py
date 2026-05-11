@@ -22,8 +22,14 @@ class ClassType(models.Model):
 
 class Client(models.Model):
     """Модель клиента (ученика) - привязана к пользователю Django"""
+    ROLE_CHOICES = [
+        ('student', 'Ученик'),
+        ('moderator', 'Модератор'),
+        ('admin', 'Администратор'),
+    ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Пользователь", related_name='client_profile', null=True, blank=True)
     phone = models.CharField("Телефон", max_length=20, blank=True)
+    role = models.CharField("Роль", max_length=20, choices=ROLE_CHOICES, default='student')
     created_at = models.DateTimeField("Дата регистрации", auto_now_add=True)
     is_active = models.BooleanField("Активен", default=True)
 
@@ -36,6 +42,14 @@ class Client(models.Model):
         if self.user:
             return f"{self.user.last_name} {self.user.first_name}"
         return f"Client #{self.id}"
+    
+    @property
+    def is_moderator(self):
+        return self.role in ['moderator', 'admin']
+    
+    @property
+    def is_admin(self):
+        return self.role == 'admin'
 
 
 @receiver(post_save, sender=User)
