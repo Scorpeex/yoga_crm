@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Функция для обновления состояния кнопок вместимости
-    function updateCapacityButtons(value) {
+    window.updateCapacityButtons = function(value) {
         document.querySelectorAll('.capacity-btn').forEach(btn => {
             btn.classList.remove('active');
             if (btn.getAttribute('data-value') === value.toString()) {
@@ -178,6 +178,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Инициализация выпадающих списков часов и минут
+    initTimeSelects();
     
     // Обработчики вкладок
     initTabs();
