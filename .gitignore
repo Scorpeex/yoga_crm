@@ -7,9 +7,10 @@ __pycache__/
 dist/
 build/
 *.class
-*.so
-*.dll
 *.exe
+*.dll
+*.so
+*.a
 *.out
 
 # Dependencies
@@ -35,8 +36,6 @@ target/
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # System files
 .DS_Store
