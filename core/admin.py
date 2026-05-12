@@ -17,7 +17,8 @@ class ClientInline(admin.StackedInline):
     model = Client
     can_delete = False
     verbose_name_plural = 'Профиль клиента'
-    fields = ('phone', 'role', 'is_active', 'created_at')
+    fields = ('phone', 'role', 'is_active')
+    readonly_fields = ('created_at',)
     
     def has_add_permission(self, request, obj=None):
         return False
