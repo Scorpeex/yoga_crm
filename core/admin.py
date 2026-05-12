@@ -53,11 +53,11 @@ class ClientAdmin(admin.ModelAdmin):
     list_editable = ['role']
     
     def get_last_name(self, obj):
-        return obj.user.last_name
+        return obj.user.last_name if obj.user else '-'
     get_last_name.short_description = 'Фамилия'
     
     def get_first_name(self, obj):
-        return obj.user.first_name
+        return obj.user.first_name if obj.user else '-'
     get_first_name.short_description = 'Имя'
 
 
