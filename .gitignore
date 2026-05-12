@@ -1,9 +1,26 @@
 ```
-# Compiled Python files
-*.pyc
+# Python
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
 
 # Logs
 *.log
-server.log
+
+# Database
+db.sqlite3
+
+# Django
+*.pot
+*.po
+*.mo
+.sass-cache/
+connect-themes/
+*.log
+local_settings.py
+db.sqlite3
+media/
+staticfiles/
+.env
 ```
