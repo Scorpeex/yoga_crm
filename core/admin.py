@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import ClassType, Client, Hall, ClassSession, Attendance, Payment, RentPayment
 
@@ -106,8 +106,9 @@ class RentPaymentAdmin(admin.ModelAdmin):
     ordering = ['-rent_date']
 
 
-# Снимаем стандартную регистрацию User и регистрируем с кастомным админом
+# Снимаем стандартную регистрацию User и Group
 admin.site.unregister(User)
+admin.site.unregister(Group)
 
 # Регистрируем все модели в стандартном сайте админа
 admin.site.register(ClassType, ClassTypeAdmin)
@@ -118,3 +119,4 @@ admin.site.register(Attendance, AttendanceAdmin)
 admin.site.register(Payment, PaymentAdmin)
 admin.site.register(RentPayment, RentPaymentAdmin)
 admin.site.register(User, UserAdmin)
+admin.site.register(Group)
