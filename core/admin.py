@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import ClassType, Client, Hall, ClassSession, Attendance, Payment, RentPayment
 
 
@@ -9,6 +11,39 @@ class ClassTypeAdmin(admin.ModelAdmin):
     list_display = ['name', 'duration_minutes', 'description']
     search_fields = ['name']
     ordering = ['name']
+
+
+# Кастомный админ для модели User с добавлением поля role из Client
+class ClientInline(admin.StackedInline):
+    model = Client
+    can_delete = False
+    verbose_name_plural = 'Профиль клиента'
+    fields = ('phone', 'role', 'is_active', 'created_at')
+    
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+class UserAdmin(BaseUserAdmin):
+    inlines = (ClientInline,)
+    list_display = ['username', 'email', 'first_name', 'last_name', 'get_role', 'is_staff', 'is_superuser', 'is_active']
+    list_filter = ['is_staff', 'is_superuser', 'is_active', 'client_profile__role']
+    search_fields = ['username', 'first_name', 'last_name', 'email']
+    ordering = ['username']
+    
+    def get_role(self, obj):
+        if hasattr(obj, 'client_profile'):
+            return obj.client_profile.get_role_display()
+        return '-'
+    get_role.short_description = 'Роль'
+    
+    def has_change_permission(self, request, obj=None):
+        # Разрешить редактирование только админам
+        if request.user.is_superuser:
+            return True
+        if hasattr(request.user, 'client_profile'):
+            return request.user.client_profile.is_admin
+        return False
 
 
 @admin.register(Client)
@@ -100,3 +135,4 @@ admin_site.register(ClassSession, ClassSessionAdmin)
 admin_site.register(Attendance, AttendanceAdmin)
 admin_site.register(Payment, PaymentAdmin)
 admin_site.register(RentPayment, RentPaymentAdmin)
+admin_site.register(User, UserAdmin)
