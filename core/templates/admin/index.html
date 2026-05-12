@@ -1,4 +1,4 @@
-{% extends "admin/index.html" %}
+{% extends "admin/index.html" as original_index %}
 {% load i18n %}
 
 {% block content %}
@@ -11,12 +11,16 @@
         </thead>
         <tbody>
             <tr>
-                <td><a href="{{ calendar_url }}">🧘‍♀️ Календарь занятий</a></td>
+                <td><a href="/calendar/">🧘‍♀️ Календарь занятий</a></td>
                 <td>{% translate 'View calendar' %}</td>
             </tr>
             <tr>
-                <td><a href="{{ profile_url }}">👤 Личный кабинет</a></td>
+                <td><a href="/profile/">👤 Личный кабинет</a></td>
                 <td>{% translate 'View profile' %}</td>
+            </tr>
+            <tr>
+                <td><a href="/admin/core/client/">👥 Пользователи (роли)</a></td>
+                <td>{% translate 'Manage user roles' %}</td>
             </tr>
         </tbody>
     </table>

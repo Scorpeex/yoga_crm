@@ -1,5 +1,5 @@
-{% extends "admin/base_site.html" %}
-{% load static %}
+{% extends "admin/base.html" %}
+{% load i18n static %}
 
 {% block extrastyle %}
 {{ block.super }}
@@ -7,6 +7,12 @@
 {% endblock %}
 
 {% block userlinks %}
+    <a href="/calendar/">🧘‍♀️ Календарь</a> / 
     <a href="/profile/">👤 Личный кабинет</a> / 
     <a href="/logout/">Выйти</a>
+    {{ block.super }}
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">Yoga CRM - Администрирование</a></h1>
 {% endblock %}
