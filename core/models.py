@@ -32,6 +32,8 @@ class Client(models.Model):
     role = models.CharField("Роль", max_length=20, choices=ROLE_CHOICES, default='student')
     created_at = models.DateTimeField("Дата регистрации", auto_now_add=True)
     is_active = models.BooleanField("Активен", default=True)
+    balance = models.DecimalField("Баланс", max_digits=10, decimal_places=2, default=0)
+    subscription_remaining = models.PositiveIntegerField("Остаток абонемента (занятий)", default=0)
 
     class Meta:
         verbose_name = "Клиент"

@@ -17,7 +17,7 @@ class ClientInline(admin.StackedInline):
     model = Client
     can_delete = False
     verbose_name_plural = 'Профиль клиента'
-    fields = ('phone', 'role', 'is_active')
+    fields = ('phone', 'role', 'is_active', 'balance', 'subscription_remaining')
     readonly_fields = ('created_at',)
     
     def has_add_permission(self, request, obj=None):
@@ -47,7 +47,7 @@ class UserAdmin(BaseUserAdmin):
 
 
 class ClientAdmin(admin.ModelAdmin):
-    list_display = ['get_last_name', 'get_first_name', 'phone', 'role', 'is_active', 'created_at']
+    list_display = ['get_last_name', 'get_first_name', 'phone', 'role', 'is_active', 'balance', 'subscription_remaining', 'created_at']
     list_filter = ['role', 'is_active', 'created_at']
     search_fields = ['user__first_name', 'user__last_name', 'user__email', 'phone']
     ordering = ['user__last_name', 'user__first_name']
