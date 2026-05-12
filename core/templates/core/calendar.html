@@ -7,9 +7,42 @@
     {% load static %}
     <link rel="stylesheet" href="{% static 'core/css/calendar.css' %}">
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <style>
+        .top-nav {
+            background: #f8f9fa;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .top-nav a {
+            color: #333;
+            text-decoration: none;
+            margin-left: 15px;
+        }
+        .top-nav a:hover {
+            color: #007bff;
+        }
+        .user-info {
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
+        <div class="top-nav">
+            <div>
+                <a href="/profile/" class="user-info">👤 {{ user.first_name|default:user.username }}</a>
+                {% if user_role == 'admin' or user_role == 'moderator' %}
+                    <a href="/admin/">⚙️ Админ-панель</a>
+                {% endif %}
+            </div>
+            <div>
+                <a href="/logout/">Выйти</a>
+            </div>
+        </div>
         <h1>🧘‍♀️ Календарь занятий</h1>
         <div id="calendar"></div>
     </div>
