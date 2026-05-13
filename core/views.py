@@ -46,10 +46,16 @@ def calendar_view(request):
     # Проверяем права пользователя
     is_moderator = False
     is_admin = False
-    if request.user.is_authenticated and hasattr(request.user, 'client_profile'):
-        client = request.user.client_profile
-        is_moderator = client.is_moderator
-        is_admin = client.is_admin
+    
+    if request.user.is_authenticated:
+        # Проверяем суперадмина Django
+        if request.user.is_superuser:
+            is_admin = True
+        # Проверяем профиль клиента
+        elif hasattr(request.user, 'client_profile'):
+            client = request.user.client_profile
+            is_moderator = client.is_moderator
+            is_admin = client.is_admin
     
     return render(request, 'core/calendar.html', {
         'halls': halls,
