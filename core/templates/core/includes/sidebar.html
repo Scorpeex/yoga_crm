@@ -1,0 +1,38 @@
+{% load i18n %}
+<!-- Постоянное боковое меню навигации -->
+<div id="custom-sidebar" class="custom-sidebar">
+    <div class="sidebar-section">
+        <h3>📌 Быстрый доступ</h3>
+        <ul>
+            <li><a href="/calendar/">🧘‍♀️ Календарь занятий</a></li>
+            <li><a href="/profile/">👤 Личный кабинет</a></li>
+        </ul>
+    </div>
+    
+    {% if user.is_staff %}
+    <div class="sidebar-section">
+        <h3>⚙️ Администрирование</h3>
+        <ul>
+            <li><a href="/admin/">🏠 Главная админа</a></li>
+            <li><a href="/admin/core/user/">👥 Пользователи</a></li>
+            <li><a href="/admin/core/classtype/">📋 Типы занятий</a></li>
+            <li><a href="/admin/core/hall/">🏢 Залы</a></li>
+            <li><a href="/admin/core/classsession/">📅 Занятия</a></li>
+            <li><a href="/admin/core/attendance/">✅ Посещения</a></li>
+            <li><a href="/admin/core/payment/">💳 Платежи</a></li>
+            <li><a href="/admin/core/rentpayment/">🏷️ Аренда</a></li>
+        </ul>
+    </div>
+    {% endif %}
+    
+    <div class="sidebar-section">
+        <h3>🔐 Аккаунт</h3>
+        <ul>
+            {% if user.is_authenticated %}
+            <li><a href="/logout/">🚪 Выйти</a></li>
+            {% else %}
+            <li><a href="/login/">🔑 Войти</a></li>
+            {% endif %}
+        </ul>
+    </div>
+</div>

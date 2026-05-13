@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Календарь занятий</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'core/css/calendar.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/admin_custom.css' %}">
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
     <style>
         .top-nav {
@@ -28,7 +28,12 @@
         .user-info {
             font-weight: bold;
         }
+        /* Скрываем боковое меню на странице календаря */
+        .custom-sidebar {
+            display: none;
+        }
     </style>
+    <title>Календарь занятий</title>
 </head>
 <body>
     <div class="container">

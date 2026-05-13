@@ -1,11 +1,14 @@
 {% extends 'admin/base_site.html' %}
 
 {% block content %}
+<!-- Боковое меню навигации -->
+{% include 'core/includes/sidebar.html' %}
+
 <div class="profile-container">
     <div class="profile-header">
         <h1>Личный кабинет</h1>
         <div class="user-info">
-            <span class="user-name">{{ client.user.first_name }} {{ client.user.last_name }}</span>
+            <span class="user-name">{{ client.first_name }} {{ client.last_name }}</span>
             {% if client.phone %}
                 <span class="user-phone">{{ client.phone }}</span>
             {% endif %}
