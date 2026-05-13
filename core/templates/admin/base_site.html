@@ -17,12 +17,6 @@
 <h1 id="site-name"><a href="{% url 'admin:index' %}">Yoga CRM - Администрирование</a></h1>
 {% endblock %}
 
-{% block content %}
-<!-- Боковое меню навигации -->
+{% block nav-sidebar %}
 {% include 'core/includes/sidebar.html' %}
-
-<!-- Основной контент -->
-<div class="main-content">
-    {{ block.super }}
-</div>
 {% endblock %}
