@@ -623,8 +623,16 @@ def profile_view(request):
     """Личный кабинет пользователя"""
     client = request.user
     
+    # Определяем время суток для приветствия
+    current_hour = timezone.now().hour
+    if 5 <= current_hour < 12:
+        greeting = "Доброе утро"
+    elif 12 <= current_hour < 18:
+        greeting = "Добрый день"
+    else:
+        greeting = "Добрый вечер"
+    
     # Получаем будущие занятия, на которые записан клиент
-    from django.utils import timezone
     upcoming_sessions = ClassSession.objects.filter(
         attendance__client=client,
         date_time__gte=timezone.now(),
@@ -640,10 +648,12 @@ def profile_view(request):
     
     context = {
         'client': client,
+        'greeting': greeting,
         'upcoming_sessions': upcoming_sessions,
         'past_sessions': past_sessions,
         'is_moderator': client.is_moderator,
         'is_admin': client.is_admin,
+        'is_staff': client.is_staff,
     }
     return render(request, 'core/profile.html', context)
 
