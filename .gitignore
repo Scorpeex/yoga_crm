@@ -3,23 +3,7 @@
 *.pyc
 __pycache__/
 
-# Database file
-db.sqlite3
-
-# Log files
+# Logs
 *.log
 server.log
-
-# Local settings
-.env
-.env.local
-*.env.*
-
-# IDE files
-.vscode/
-.idea/
-
-# Python cache
-*.pyc
-__pycache__/
 ```
