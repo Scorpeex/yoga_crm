@@ -3,14 +3,33 @@
 {% block content %}
 <div class="profile-container">
     <div class="profile-header">
-        <h1>Личный кабинет</h1>
+        <h1>{{ greeting }}, {{ client.first_name }}!</h1>
         <div class="user-info">
-            <span class="user-name">{{ client.first_name }} {{ client.last_name }}</span>
+            <span class="user-name">{{ client.last_name }} {{ client.first_name }}</span>
             {% if client.phone %}
                 <span class="user-phone">{{ client.phone }}</span>
             {% endif %}
         </div>
+        
+        <!-- Баланс и абонемент для всех пользователей -->
+        <div class="balance-info">
+            <div class="balance-item">
+                <span class="balance-label">Баланс:</span>
+                <span class="balance-value">{{ client.balance|default:"0" }} ₽</span>
+            </div>
+            <div class="balance-item">
+                <span class="balance-label">Остаток абонемента:</span>
+                <span class="balance-value">{{ client.subscription_remaining|default:"0" }} занятий</span>
+            </div>
+        </div>
     </div>
+    
+    <!-- Боковое меню для модераторов/админов -->
+    {% if is_staff or is_moderator %}
+    <div class="sidebar-wrapper">
+        {% include 'core/includes/sidebar.html' %}
+    </div>
+    {% endif %}
     
     <div class="profile-content">
         <!-- Будущие занятия -->
@@ -126,6 +145,82 @@ body {
 .user-email, .user-phone {
     font-size: 14px;
     opacity: 0.9;
+}
+
+.balance-info {
+    display: flex;
+    gap: 30px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.balance-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.balance-label {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.balance-value {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.sidebar-wrapper {
+    margin-bottom: 30px;
+}
+
+.sidebar-wrapper .custom-sidebar {
+    display: block !important;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+}
+
+.sidebar-wrapper .sidebar-section {
+    margin-bottom: 20px;
+}
+
+.sidebar-wrapper .sidebar-section:last-child {
+    margin-bottom: 0;
+}
+
+.sidebar-wrapper .sidebar-section h3 {
+    color: #333;
+    font-size: 16px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.sidebar-wrapper .sidebar-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-wrapper .sidebar-section ul li {
+    margin-bottom: 8px;
+}
+
+.sidebar-wrapper .sidebar-section ul li a {
+    display: block;
+    padding: 10px 15px;
+    color: #333;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.sidebar-wrapper .sidebar-section ul li a:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
 }
 
 .profile-content {

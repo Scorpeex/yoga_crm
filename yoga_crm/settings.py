@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-ktxd24q3*ss47@)dp!&4_f!05+fvzqo2(t20m@fm(u^7hi#8ll
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver']
 
 # Timezone settings - Новосибирск +7 UTC
 TIME_ZONE = 'Asia/Novosibirsk'
