@@ -1,9 +1,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import ClassType, Client, Hall, ClassSession, Attendance, Payment, RentPayment
+from .models import ClassType, User, Hall, ClassSession, Attendance, Payment, RentPayment
 
 
 class ClassTypeAdmin(admin.ModelAdmin):
@@ -12,54 +12,28 @@ class ClassTypeAdmin(admin.ModelAdmin):
     ordering = ['name']
 
 
-# Кастомный админ для модели User с добавлением поля role из Client
-class ClientInline(admin.StackedInline):
-    model = Client
-    can_delete = False
-    verbose_name_plural = 'Профиль клиента'
-    fields = ('phone', 'role', 'is_active', 'balance', 'subscription_remaining')
-    readonly_fields = ('created_at',)
-    
-    def has_add_permission(self, request, obj=None):
-        return False
-
-
+# Кастомный админ для модели User с добавлением полей клиента
 class UserAdmin(BaseUserAdmin):
-    inlines = (ClientInline,)
-    list_display = ['username', 'email', 'first_name', 'last_name', 'get_role', 'is_staff', 'is_superuser', 'is_active']
-    list_filter = ['is_staff', 'is_superuser', 'is_active', 'client_profile__role']
-    search_fields = ['username', 'first_name', 'last_name', 'email']
-    ordering = ['username']
+    list_display = ['username', 'email', 'first_name', 'last_name', 'phone', 'role', 'is_active', 'balance', 'subscription_remaining', 'is_staff']
+    list_filter = ['is_staff', 'is_superuser', 'is_active', 'role']
+    search_fields = ['username', 'first_name', 'last_name', 'email', 'phone']
+    ordering = ['last_name', 'first_name']
     
-    def get_role(self, obj):
-        if hasattr(obj, 'client_profile'):
-            return obj.client_profile.get_role_display()
-        return '-'
-    get_role.short_description = 'Роль'
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Персональная информация', {'fields': ('first_name', 'last_name', 'email', 'phone', 'role')}),
+        ('Финансы', {'fields': ('balance', 'subscription_remaining')}),
+        ('Права доступа', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Даты', {'fields': ('created_at', 'last_login')}),
+    )
     
-    def has_change_permission(self, request, obj=None):
-        # Разрешить редактирование только админам
-        if request.user.is_superuser:
-            return True
-        if hasattr(request.user, 'client_profile'):
-            return request.user.client_profile.is_admin
-        return False
-
-
-class ClientAdmin(admin.ModelAdmin):
-    list_display = ['get_last_name', 'get_first_name', 'phone', 'role', 'is_active', 'balance', 'subscription_remaining', 'created_at']
-    list_filter = ['role', 'is_active', 'created_at']
-    search_fields = ['user__first_name', 'user__last_name', 'user__email', 'phone']
-    ordering = ['user__last_name', 'user__first_name']
-    list_editable = ['role']
-    
-    def get_last_name(self, obj):
-        return obj.user.last_name if obj.user else '-'
-    get_last_name.short_description = 'Фамилия'
-    
-    def get_first_name(self, obj):
-        return obj.user.first_name if obj.user else '-'
-    get_first_name.short_description = 'Имя'
+    readonly_fields = ('created_at', 'last_login')
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'password1', 'password2', 'email', 'first_name', 'last_name', 'phone', 'role'),
+        }),
+    )
 
 
 class HallAdmin(admin.ModelAdmin):
@@ -106,17 +80,15 @@ class RentPaymentAdmin(admin.ModelAdmin):
     ordering = ['-rent_date']
 
 
-# Снимаем стандартную регистрацию User и Group
-admin.site.unregister(User)
+# Снимаем стандартную регистрацию Group
 admin.site.unregister(Group)
 
 # Регистрируем все модели в стандартном сайте админа
 admin.site.register(ClassType, ClassTypeAdmin)
-admin.site.register(Client, ClientAdmin)
+admin.site.register(User, UserAdmin)
 admin.site.register(Hall, HallAdmin)
 admin.site.register(ClassSession, ClassSessionAdmin)
 admin.site.register(Attendance, AttendanceAdmin)
 admin.site.register(Payment, PaymentAdmin)
 admin.site.register(RentPayment, RentPaymentAdmin)
-admin.site.register(User, UserAdmin)
 admin.site.register(Group)
