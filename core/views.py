@@ -9,7 +9,7 @@ from django.db import transaction
 from datetime import datetime, timedelta
 from django.utils import timezone
 import pytz
-from .models import ClassSession, Hall, ClassType, Client, Attendance
+from .models import ClassSession, Hall, ClassType, User, Attendance
 from .forms import RegistrationForm, LoginForm
 from django.db.models import Q
 
@@ -376,7 +376,7 @@ def update_attendance(request, session_id):
         
         # Обновляем или создаем записи о посещении
         for client_id in attended_client_ids:
-            client = get_object_or_404(Client, id=client_id)
+            client = get_object_or_404(User, id=client_id)
             attendance, created = Attendance.objects.get_or_create(
                 session=session,
                 client=client,
@@ -492,7 +492,7 @@ def add_client_to_session(request, session_id):
         if not client_id:
             return JsonResponse({'error': 'ID клиента обязателен'}, status=400)
         
-        client = get_object_or_404(Client, id=client_id)
+        client = get_object_or_404(User, id=client_id)
         
         # Проверяем, не записан ли уже клиент
         existing = Attendance.objects.filter(session=session, client=client).first()
@@ -538,7 +538,7 @@ def search_clients(request):
             return JsonResponse({'clients': []})
         
         # Ищем по фамилии, имени или телефону
-        clients = Client.objects.filter(
+        clients = User.objects.filter(
             Q(user__first_name__icontains=query) |
             Q(user__last_name__icontains=query) |
             Q(phone__icontains=query)
@@ -621,7 +621,7 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     """Личный кабинет пользователя"""
-    client = get_object_or_404(Client, user=request.user)
+    client = get_object_or_404(User, user=request.user)
     
     # Получаем будущие занятия, на которые записан клиент
     from django.utils import timezone
