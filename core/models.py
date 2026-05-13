@@ -1,8 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import User
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+from django.contrib.auth.models import AbstractUser
 
 
 class ClassType(models.Model):
@@ -20,14 +18,13 @@ class ClassType(models.Model):
         return self.name
 
 
-class Client(models.Model):
-    """Модель клиента (ученика) - привязана к пользователю Django"""
+class User(AbstractUser):
+    """Модель пользователя (клиента/ученика) с расширенными полями"""
     ROLE_CHOICES = [
         ('student', 'Ученик'),
         ('moderator', 'Модератор'),
         ('admin', 'Администратор'),
     ]
-    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Пользователь", related_name='client_profile', null=True, blank=True)
     phone = models.CharField("Телефон", max_length=20, blank=True)
     role = models.CharField("Роль", max_length=20, choices=ROLE_CHOICES, default='student')
     created_at = models.DateTimeField("Дата регистрации", auto_now_add=True)
@@ -38,12 +35,10 @@ class Client(models.Model):
     class Meta:
         verbose_name = "Клиент"
         verbose_name_plural = "Клиенты"
-        ordering = ['user__last_name', 'user__first_name']
+        ordering = ['last_name', 'first_name']
 
     def __str__(self):
-        if self.user:
-            return f"{self.user.last_name} {self.user.first_name}"
-        return f"Client #{self.id}"
+        return f"{self.last_name} {self.first_name}"
     
     @property
     def is_moderator(self):
@@ -52,20 +47,6 @@ class Client(models.Model):
     @property
     def is_admin(self):
         return self.role == 'admin'
-
-
-@receiver(post_save, sender=User)
-def create_client_profile(sender, instance, created, **kwargs):
-    """Автоматически создаёт профиль клиента при создании пользователя"""
-    if created and not hasattr(instance, 'client_profile'):
-        Client.objects.create(user=instance)
-
-
-@receiver(post_save, sender=User)
-def save_client_profile(sender, instance, **kwargs):
-    """Сохраняет профиль клиента при сохранении пользователя"""
-    if hasattr(instance, 'client_profile'):
-        instance.client_profile.save()
 
 
 class Hall(models.Model):
@@ -127,7 +108,7 @@ class ClassSession(models.Model):
 class Attendance(models.Model):
     """Модель посещаемости"""
     session = models.ForeignKey(ClassSession, on_delete=models.CASCADE, verbose_name="Занятие")
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, verbose_name="Клиент")
+    client = models.ForeignKey('User', on_delete=models.CASCADE, verbose_name="Клиент")
     visited_at = models.DateTimeField("Дата посещения", auto_now_add=True)
     status = models.CharField(
         "Статус",
@@ -163,7 +144,7 @@ class Payment(models.Model):
         ('refunded', 'Возвращено'),
     ]
 
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, verbose_name="Клиент")
+    client = models.ForeignKey('User', on_delete=models.CASCADE, verbose_name="Клиент")
     amount = models.DecimalField("Сумма", max_digits=10, decimal_places=2)
     payment_type = models.CharField("Тип оплаты", max_length=20, choices=PAYMENT_TYPES, default='single')
     status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default='paid')
