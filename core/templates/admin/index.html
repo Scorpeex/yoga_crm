@@ -1,12 +1,10 @@
-{% extends "admin/index.html" %}
+{% extends "admin/base_site.html" %}
 {% load i18n %}
 
 {% block content %}
-<!-- Боковое меню навигации -->
-{% include 'core/includes/sidebar.html' %}
-
-<!-- Основной контент -->
+<!-- Основной контент главной страницы админ-панели -->
 <div class="main-content" style="margin-left: 250px; padding: 20px;">
-    {{ block.super }}
+    <h1>Добро пожаловать в Yoga CRM</h1>
+    <p>Используйте боковое меню для навигации по разделам админ-панели.</p>
 </div>
 {% endblock %}
