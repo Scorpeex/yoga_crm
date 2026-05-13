@@ -621,7 +621,7 @@ def logout_view(request):
 @login_required
 def profile_view(request):
     """Личный кабинет пользователя"""
-    client = get_object_or_404(User, user=request.user)
+    client = request.user
     
     # Получаем будущие занятия, на которые записан клиент
     from django.utils import timezone
