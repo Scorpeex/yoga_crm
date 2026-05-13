@@ -1,14 +1,36 @@
 /* Кастомные стили для админ-панели */
 
-/* Стили для бокового меню навигации */
-.custom-sidebar {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+/* Скрываем стандартную боковую панель навигации Django */
+#nav-sidebar {
+    display: none !important;
 }
 
+/* Стили для нашего кастомного бокового меню навигации */
+.custom-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 250px;
+    background: #2c3e50;
+    padding: 20px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Смещаем основной контент вправо, чтобы освободить место для sidebar */
+.main > .content {
+    margin-left: 250px;
+    padding: 20px;
+}
+
+/* Адаптация header */
+#header {
+    margin-left: 250px;
+}
+
+/* Стили секций меню */
 .custom-sidebar .sidebar-section {
     margin-bottom: 25px;
 }
@@ -18,13 +40,13 @@
 }
 
 .custom-sidebar .sidebar-section h3 {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
-    color: #666;
+    color: #95a5a6;
     margin: 0 0 12px 0;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 2px solid #e0e0e0;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #34495e;
     padding-bottom: 8px;
 }
 
@@ -35,7 +57,7 @@
 }
 
 .custom-sidebar .sidebar-section ul li {
-    margin-bottom: 8px;
+    margin-bottom: 5px;
 }
 
 .custom-sidebar .sidebar-section ul li:last-child {
@@ -44,16 +66,16 @@
 
 .custom-sidebar .sidebar-section ul li a {
     display: block;
-    padding: 10px 12px;
-    color: #333;
+    padding: 10px 15px;
+    color: #ecf0f1;
     text-decoration: none;
-    border-radius: 6px;
+    border-radius: 4px;
     transition: all 0.2s ease;
-    font-weight: 500;
+    font-size: 14px;
 }
 
 .custom-sidebar .sidebar-section ul li a:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #3498db;
     color: white;
     transform: translateX(5px);
 }
