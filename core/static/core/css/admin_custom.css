@@ -116,3 +116,16 @@
     color: #45a049;
     text-decoration: underline;
 }
+
+/* Специальные стили для страницы входа - отключаем sidebar */
+.login-page .custom-sidebar {
+    display: none;
+}
+
+.login-page .main > .content {
+    margin-left: 0;
+}
+
+.login-page #header {
+    margin-left: 0;
+}
