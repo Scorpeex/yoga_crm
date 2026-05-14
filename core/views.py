@@ -107,16 +107,32 @@ def get_events(request):
         else:
             end_date = datetime(year, month + 1, 1) - timedelta(days=1)
     
+    # Базовый запрос
     sessions = ClassSession.objects.filter(
         date_time__gte=start_date,
         date_time__lte=end_date.replace(hour=23, minute=59, second=59)
-    ).select_related('hall', 'class_type')
+    ).select_related('hall', 'class_type', 'tariff')
+    
+    # Фильтрация по доступным тарифам для обычных пользователей
+    if request.user.is_authenticated:
+        # Админы и модераторы видят все занятия
+        if not request.user.is_moderator:
+            # Получаем IDs доступных тарифов пользователя
+            allowed_tariff_ids = list(request.user.allowed_tariffs.values_list('id', flat=True))
+            if allowed_tariff_ids:
+                sessions = sessions.filter(tariff_id__in=allowed_tariff_ids)
+            else:
+                # Если у пользователя нет доступных тарифов, показываем пустой список
+                sessions = ClassSession.objects.none()
     
     events = []
     
     for session in sessions:
         # Время хранится как локальное (без timezone info), используем его напрямую
         local_dt = session.date_time
+        
+        # Получаем max_participants из тарифа или устанавливаем по умолчанию
+        max_participants = session.tariff.max_participants if session.tariff else 10
         
         events.append({
             'id': str(session.id),
@@ -130,7 +146,7 @@ def get_events(request):
                 'hall_id': session.hall.id if session.hall else None,
                 'hall_name': session.hall.name if session.hall else '',
                 'duration': session.duration,
-                'max_participants': session.max_participants,
+                'max_participants': max_participants,
                 'description': session.class_type.description if session.class_type.description else '',
                 'is_recurring': session.is_recurring,
                 'recurrence_id': session.recurrence_id or ''
