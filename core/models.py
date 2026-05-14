@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 import uuid
+from datetime import timedelta
 
 
 class Tariff(models.Model):
@@ -22,6 +23,19 @@ class Tariff(models.Model):
     description = models.TextField("Описание", blank=True)
     is_active = models.BooleanField("Активен", default=True)
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
+    
+    # Поля для абонемента
+    is_subscription_available = models.BooleanField("Доступен абонемент", default=False,
+                                                    help_text="Если отмечено, для этого тарифа можно приобрести абонемент")
+    subscription_sessions_count = models.PositiveIntegerField("Количество занятий в абонементе", 
+                                                              default=8,
+                                                              help_text="Стандартное количество занятий в абонементе")
+    subscription_price = models.DecimalField("Стоимость абонемента", max_digits=10, decimal_places=2, 
+                                             default=0,
+                                             help_text="Общая стоимость абонемента")
+    subscription_validity_days = models.PositiveIntegerField("Срок действия абонемента (дней)", 
+                                                             default=45,
+                                                             help_text="Срок действия абонемента в днях (по умолчанию 45 дней = 1.5 месяца)")
 
     class Meta:
         verbose_name = "Тариф"
@@ -35,6 +49,9 @@ class Tariff(models.Model):
         # Автоматически устанавливаем цену полного сплита, если не задана
         if self.tariff_type == 'split' and self.price_full_split == 0:
             self.price_full_split = self.price_per_person * 2
+        # Автоматически рассчитываем стоимость абонемента, если не задана
+        if self.is_subscription_available and self.subscription_price == 0:
+            self.subscription_price = self.price_per_person * self.subscription_sessions_count
         super().save(*args, **kwargs)
 
 
@@ -68,7 +85,6 @@ class User(AbstractUser):
     created_at = models.DateTimeField("Дата регистрации", auto_now_add=True)
     is_active = models.BooleanField("Активен", default=True)
     balance = models.DecimalField("Баланс", max_digits=10, decimal_places=2, default=0)
-    subscription_remaining = models.PositiveIntegerField("Остаток абонемента (занятий)", default=0)
     allowed_tariffs = models.ManyToManyField(Tariff, blank=True, 
                                              verbose_name="Доступные тарифы",
                                              help_text="Тарифы, которые доступны пользователю для записи")
@@ -182,6 +198,13 @@ class Booking(models.Model):
     paid_at = models.DateTimeField("Дата оплаты", null=True, blank=True)
     amount_paid = models.DecimalField("Сумма оплаты", max_digits=10, decimal_places=2, default=0)
     comment = models.TextField("Комментарий", blank=True)
+    
+    # Поля для абонемента
+    is_subscription_used = models.BooleanField("Использован абонемент", default=False,
+                                               help_text="Если отмечено, занятие оплачено через абонемент")
+    subscription = models.ForeignKey('Subscription', on_delete=models.SET_NULL, null=True, blank=True,
+                                     verbose_name="Абонемент", related_name='bookings',
+                                     help_text="Абонемент, через который оплачено занятие")
 
     class Meta:
         verbose_name = "Запись на занятие"
@@ -195,7 +218,6 @@ class Booking(models.Model):
     def save(self, *args, **kwargs):
         # Автоматически устанавливаем дедлайн оплаты (за 4 часа до занятия)
         if not self.payment_deadline and self.session:
-            from datetime import timedelta
             self.payment_deadline = self.session.date_time - timedelta(hours=4)
         super().save(*args, **kwargs)
 
@@ -207,16 +229,21 @@ class PaymentTransaction(models.Model):
         ('debit', 'Списание за занятие'),
         ('refund', 'Возврат средств'),
         ('adjustment', 'Корректировка баланса'),
+        ('subscription_purchase', 'Покупка абонемента'),
+        ('subscription_use', 'Использование абонемента'),
     ]
     
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transactions', 
                                verbose_name="Клиент")
-    transaction_type = models.CharField("Тип операции", max_length=20, choices=TRANSACTION_TYPES)
+    transaction_type = models.CharField("Тип операции", max_length=25, choices=TRANSACTION_TYPES)
     amount = models.DecimalField("Сумма", max_digits=10, decimal_places=2)
     balance_before = models.DecimalField("Баланс до операции", max_digits=10, decimal_places=2)
     balance_after = models.DecimalField("Баланс после операции", max_digits=10, decimal_places=2)
     booking = models.ForeignKey(Booking, on_delete=models.SET_NULL, null=True, blank=True, 
                                 verbose_name="Запись", related_name='transactions')
+    subscription = models.ForeignKey('Subscription', on_delete=models.SET_NULL, null=True, blank=True,
+                                     verbose_name="Абонемент", related_name='transactions',
+                                     help_text="Абонемент, связанный с этой операцией")
     comment = models.TextField("Комментарий", blank=True)
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
 
@@ -228,6 +255,82 @@ class PaymentTransaction(models.Model):
     def __str__(self):
         sign = '+' if self.transaction_type == 'deposit' else '-'
         return f"{self.client}: {sign}{self.amount} руб. ({self.get_transaction_type_display()})"
+
+
+class Subscription(models.Model):
+    """Модель абонемента на занятия"""
+    STATUS_CHOICES = [
+        ('active', 'Активен'),
+        ('expired', 'Истек'),
+        ('used_up', 'Использован полностью'),
+        ('cancelled', 'Отменен'),
+    ]
+    
+    client = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Клиент",
+                               related_name='subscriptions')
+    tariff = models.ForeignKey(Tariff, on_delete=models.PROTECT, verbose_name="Тариф",
+                               help_text="Тариф, для которого приобретен абонемент")
+    sessions_total = models.PositiveIntegerField("Всего занятий", default=8)
+    sessions_remaining = models.PositiveIntegerField("Осталось занятий")
+    purchased_at = models.DateTimeField("Дата покупки", auto_now_add=True)
+    activated_at = models.DateTimeField("Дата активации", null=True, blank=True,
+                                        help_text="Дата первого использования абонемента")
+    expires_at = models.DateTimeField("Дата истечения", null=True, blank=True)
+    status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default='active')
+    total_price = models.DecimalField("Общая стоимость", max_digits=10, decimal_places=2)
+    comment = models.TextField("Комментарий", blank=True)
+
+    class Meta:
+        verbose_name = "Абонемент"
+        verbose_name_plural = "Абонементы"
+        ordering = ['-purchased_at']
+
+    def __str__(self):
+        return f"{self.client} - {self.tariff.name} ({self.sessions_remaining}/{self.sessions_total})"
+    
+    def save(self, *args, **kwargs):
+        # При создании устанавливаем sessions_remaining равным sessions_total
+        if not self.sessions_remaining and self.sessions_total:
+            self.sessions_remaining = self.sessions_total
+        # Если абонемент активирован и дата истечения не задана, рассчитываем её
+        if self.activated_at and not self.expires_at:
+            validity_days = self.tariff.subscription_validity_days if self.tariff else 45
+            self.expires_at = self.activated_at + timedelta(days=validity_days)
+        super().save(*args, **kwargs)
+    
+    def activate(self):
+        """Активировать абонемент (при первой записи)"""
+        if not self.activated_at:
+            self.activated_at = timezone.now()
+            validity_days = self.tariff.subscription_validity_days if self.tariff else 45
+            self.expires_at = self.activated_at + timedelta(days=validity_days)
+            self.save()
+    
+    def use_session(self):
+        """Использовать одно занятие из абонемента"""
+        if self.sessions_remaining > 0:
+            self.sessions_remaining -= 1
+            if not self.activated_at:
+                self.activate()
+            if self.sessions_remaining == 0:
+                self.status = 'used_up'
+            elif self.expires_at and timezone.now() > self.expires_at:
+                self.status = 'expired'
+            self.save()
+    
+    def is_valid(self):
+        """Проверить, действителен ли абонемент"""
+        if self.status != 'active':
+            return False
+        if self.sessions_remaining <= 0:
+            self.status = 'used_up'
+            self.save()
+            return False
+        if self.expires_at and timezone.now() > self.expires_at:
+            self.status = 'expired'
+            self.save()
+            return False
+        return True
 
 
 class Attendance(models.Model):

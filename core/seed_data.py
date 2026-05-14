@@ -7,36 +7,41 @@
 from django.utils import timezone
 from datetime import timedelta, datetime
 from decimal import Decimal
-from core.models import Tariff, ClassType, User, Hall, ClassSession, Booking, PaymentTransaction
+from core.models import Tariff, ClassType, User, Hall, ClassSession, Booking, PaymentTransaction, Subscription
 
 
 def create_tariffs():
     """Создание тарифов"""
     print("Создание тарифов...")
     
-    # Групповой тариф
+    # Групповой тариф с абонементом
     group_tariff, _ = Tariff.objects.get_or_create(
         name="Групповое занятие",
         defaults={
             'tariff_type': 'group',
             'price_per_person': Decimal('500.00'),
             'max_participants': 10,
-            'description': 'Стандартное групповое занятие до 10 человек'
+            'description': 'Стандартное групповое занятие до 10 человек',
+            'is_subscription_available': True,
+            'subscription_sessions_count': 8,
+            'subscription_price': Decimal('9000.00'),  # 8 * 1125 = 9000
+            'subscription_validity_days': 45  # 1.5 месяца
         }
     )
     
-    # Индивидуальный тариф
+    # Индивидуальный тариф (без абонемента)
     individual_tariff, _ = Tariff.objects.get_or_create(
         name="Индивидуальное занятие",
         defaults={
             'tariff_type': 'individual',
             'price_per_person': Decimal('1500.00'),
             'max_participants': 1,
-            'description': 'Персональное занятие с тренером'
+            'description': 'Персональное занятие с тренером',
+            'is_subscription_available': False
         }
     )
     
-    # Сплит тариф
+    # Сплит тариф (без абонемента)
     split_tariff, _ = Tariff.objects.get_or_create(
         name="Сплит (до 2 человек)",
         defaults={
@@ -44,7 +49,8 @@ def create_tariffs():
             'price_per_person': Decimal('800.00'),
             'price_full_split': Decimal('1600.00'),
             'max_participants': 2,
-            'description': 'Занятие для пары. Если приходит один - платит полную стоимость.'
+            'description': 'Занятие для пары. Если приходит один - платит полную стоимость.',
+            'is_subscription_available': False
         }
     )
     
@@ -182,7 +188,7 @@ def create_users(tariffs):
     moderator.set_password('mod123')
     moderator.save()
     
-    # Ученик 1 - доступен только групповой тариф
+    # Ученик 1 - доступен только групповой тариф, с абонементом
     student1, _ = User.objects.get_or_create(
         username='student1',
         defaults={
@@ -191,14 +197,14 @@ def create_users(tariffs):
             'last_name': 'Петрова',
             'role': 'student',
             'phone': '+7-900-111-22-33',
-            'balance': Decimal('3000.00')
+            'balance': Decimal('12000.00')  # Достаточно для абонемента (9000) + немного на остаток
         }
     )
     student1.allowed_tariffs.add(tariffs['group'])
     student1.set_password('stud123')
     student1.save()
     
-    # Ученик 2 - доступны групповой и сплит
+    # Ученик 2 - доступны групповой и сплит, без абонемента
     student2, _ = User.objects.get_or_create(
         username='student2',
         defaults={
@@ -214,7 +220,7 @@ def create_users(tariffs):
     student2.set_password('stud123')
     student2.save()
     
-    # Ученик 3 - все тарифы (VIP клиент)
+    # Ученик 3 - все тарифы (VIP клиент), с абонементом
     student3, _ = User.objects.get_or_create(
         username='student3',
         defaults={
@@ -223,7 +229,7 @@ def create_users(tariffs):
             'last_name': 'Смирнова',
             'role': 'student',
             'phone': '+7-900-777-88-99',
-            'balance': Decimal('10000.00')
+            'balance': Decimal('15000.00')  # Достаточно для абонемента и других занятий
         }
     )
     student3.allowed_tariffs.add(tariffs['group'], tariffs['split'], tariffs['individual'])
@@ -444,6 +450,19 @@ def run_seed():
     users = create_users(tariffs)
     print(f"✓ Создано пользователей: {len(users)}")
     
+    # Покупаем абонементы для student1 и student3
+    from core.services import PaymentService
+    
+    if tariffs['group'].is_subscription_available:
+        try:
+            sub1 = PaymentService.purchase_subscription(users['student1'], tariffs['group'], "Тестовый абонемент для Анны")
+            print(f"✓ Куплен абонемент для {users['student1']}: {sub1.sessions_remaining} занятий")
+            
+            sub3 = PaymentService.purchase_subscription(users['student3'], tariffs['group'], "Тестовый абонемент для Ольги")
+            print(f"✓ Куплен абонемент для {users['student3']}: {sub3.sessions_remaining} занятий")
+        except Exception as e:
+            print(f"⚠ Ошибка при покупке абонемента: {e}")
+    
     # Создаем занятия
     sessions = create_sessions(class_types, halls, tariffs)
     print(f"✓ Создано занятий: {len(sessions)}")
@@ -459,6 +478,9 @@ def run_seed():
     print("  Admin: admin / admin123")
     print("  Moderator: moderator / mod123")
     print("  Students: student1-4 / stud123")
+    print("\nАбонементы:")
+    print("  - Групповой тариф: 8 занятий за 9000 руб., срок действия 45 дней")
+    print("  - Доступен для тарифа 'Групповое занятие'")
     print("=" * 50)
 
 
