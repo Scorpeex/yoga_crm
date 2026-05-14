@@ -21,6 +21,9 @@
                 <span class="balance-label">Остаток абонемента:</span>
                 <span class="balance-value">{{ client.subscription_remaining|default:"0" }} занятий</span>
             </div>
+            <div class="balance-item">
+                <a href="{% url 'calendar' %}" class="btn btn-secondary btn-small">Перейти к расписанию</a>
+            </div>
         </div>
     </div>
     
@@ -335,6 +338,11 @@ body {
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
+}
+
+.btn-small {
+    padding: 8px 16px;
+    font-size: 13px;
 }
 
 .btn-secondary {
