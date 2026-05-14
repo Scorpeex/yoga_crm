@@ -1,9 +1,114 @@
 ```
-# Compiled Python files
-*.pyc
+# Python
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.ENV
+.ENV.*
+.python-version
+.pytest_cache/
+.mypy_cache/
+.coverage
+coverage/
+
+# Build and distribution artifacts
+dist/
+build/
+*.egg-info/
+.eggs/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Logs
 *.log
-server.log
+
+# Environment variables
+.env
+.env.local
+*.env.*
+
+# Coverage reports
+htmlcov/
+.coverage.*
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Distribution / packaging
+*.tar.gz
+*.whl
+
+# Local configuration
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Django specific
+*.sqlite3
+*.sqlite3-journal
+media/
+staticfiles/
+
+# Webpack
+webpack-stats.json
+
+# npm
+node_modules/
+
+# Bower
+bower_components/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+.temp/
+
+# Backup files
+*~
+\#*\#
+.\#*
+%*%
+._*
+
+# Testing
+.pytest_cache/
+.hypothesis/
+coverage.xml
+htmlcov/
+.tox/
+
+# Documentation
+docs/_build/
+
+# CI
+.github/
+
+# Security
+secret.key
 ```
