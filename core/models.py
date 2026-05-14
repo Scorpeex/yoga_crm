@@ -1,6 +1,41 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
+import uuid
+
+
+class Tariff(models.Model):
+    """Справочник тарифов для занятий"""
+    TYPE_CHOICES = [
+        ('group', 'Групповое занятие'),
+        ('individual', 'Индивидуальное занятие'),
+        ('split', 'Сплит (до 2 человек)'),
+    ]
+    
+    name = models.CharField("Название тарифа", max_length=100)
+    tariff_type = models.CharField("Тип тарифа", max_length=20, choices=TYPE_CHOICES, default='group')
+    price_per_person = models.DecimalField("Цена за одного человека", max_digits=10, decimal_places=2)
+    price_full_split = models.DecimalField("Полная цена за сплит (если пришел 1 из 2)", 
+                                           max_digits=10, decimal_places=2, default=0,
+                                           help_text="Заполняется только для тарифа 'Сплит'")
+    max_participants = models.PositiveIntegerField("Макс. участников", default=10)
+    description = models.TextField("Описание", blank=True)
+    is_active = models.BooleanField("Активен", default=True)
+    created_at = models.DateTimeField("Дата создания", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Тариф"
+        verbose_name_plural = "Тарифы"
+        ordering = ['name']
+
+    def __str__(self):
+        return f"{self.name} ({self.get_tariff_type_display()}) - {self.price_per_person} руб."
+    
+    def save(self, *args, **kwargs):
+        # Автоматически устанавливаем цену полного сплита, если не задана
+        if self.tariff_type == 'split' and self.price_full_split == 0:
+            self.price_full_split = self.price_per_person * 2
+        super().save(*args, **kwargs)
 
 
 class ClassType(models.Model):
@@ -8,6 +43,9 @@ class ClassType(models.Model):
     name = models.CharField("Название занятия", max_length=100)
     description = models.TextField("Описание", blank=True)
     duration_minutes = models.PositiveIntegerField("Стандартная длительность (мин)", default=60)
+    default_tariff = models.ForeignKey(Tariff, on_delete=models.SET_NULL, null=True, blank=True, 
+                                       verbose_name="Тариф по умолчанию",
+                                       help_text="Тариф, применяемый по умолчанию для этого типа занятий")
 
     class Meta:
         verbose_name = "Тип занятия"
@@ -31,6 +69,9 @@ class User(AbstractUser):
     is_active = models.BooleanField("Активен", default=True)
     balance = models.DecimalField("Баланс", max_digits=10, decimal_places=2, default=0)
     subscription_remaining = models.PositiveIntegerField("Остаток абонемента (занятий)", default=0)
+    allowed_tariffs = models.ManyToManyField(Tariff, blank=True, 
+                                             verbose_name="Доступные тарифы",
+                                             help_text="Тарифы, которые доступны пользователю для записи")
 
     class Meta:
         verbose_name = "Клиент"
@@ -79,10 +120,11 @@ class Hall(models.Model):
 class ClassSession(models.Model):
     """Модель занятия"""
     class_type = models.ForeignKey(ClassType, on_delete=models.CASCADE, verbose_name="Занятие")
+    tariff = models.ForeignKey(Tariff, on_delete=models.PROTECT, verbose_name="Тариф",
+                               help_text="Тариф для этого занятия")
     date_time = models.DateTimeField("Дата и время")
     duration = models.PositiveIntegerField("Длительность (мин)", default=60)
     hall = models.ForeignKey(Hall, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Зал")
-    max_participants = models.PositiveIntegerField("Макс. участников", default=20)
     is_recurring = models.BooleanField("Повторять каждую неделю", default=False)
     recurrence_id = models.CharField("ID серии повторений", max_length=50, blank=True, db_index=True)
 
@@ -92,7 +134,7 @@ class ClassSession(models.Model):
         ordering = ['-date_time']
 
     def __str__(self):
-        return f"{self.class_type.name} - {self.date_time.strftime('%d.%m.%Y %H:%M')}"
+        return f"{self.class_type.name} - {self.date_time.strftime('%d.%m.%Y %H:%M')} ({self.tariff.name})"
 
     def save(self, *args, **kwargs):
         # Автоматически устанавливаем длительность из типа занятия, если не указана явно
@@ -100,15 +142,98 @@ class ClassSession(models.Model):
             self.duration = self.class_type.duration_minutes
         # Если is_recurring=True, но recurrence_id не задан, генерируем его
         if self.is_recurring and not self.recurrence_id:
-            import uuid
             self.recurrence_id = str(uuid.uuid4())
+        super().save(*args, **kwargs)
+    
+    def get_current_price(self):
+        """Расчет текущей цены для записи с учетом заполненности (для сплита)"""
+        if self.tariff.tariff_type != 'split':
+            return self.tariff.price_per_person
+        
+        # Для сплита считаем количество записанных
+        bookings_count = self.bookings.filter(status__in=['confirmed', 'paid']).count()
+        
+        if bookings_count >= 2:
+            # Если записано 2 человека, цена делится поровну
+            return self.tariff.price_per_person
+        else:
+            # Если записан 1 человек, он платит полную стоимость за сплит
+            return self.tariff.price_full_split
+
+
+class Booking(models.Model):
+    """Модель записи пользователя на занятие"""
+    STATUS_CHOICES = [
+        ('pending', 'Ожидает подтверждения'),
+        ('confirmed', 'Подтверждено'),
+        ('paid', 'Оплачено'),
+        ('cancelled', 'Отменено пользователем'),
+        ('cancelled_by_admin', 'Отменено администратором'),
+        ('no_show', 'Не пришел'),
+    ]
+    
+    session = models.ForeignKey(ClassSession, on_delete=models.CASCADE, related_name='bookings', 
+                                verbose_name="Занятие")
+    client = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Клиент")
+    status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default='pending')
+    booked_at = models.DateTimeField("Дата записи", auto_now_add=True)
+    payment_deadline = models.DateTimeField("Дедлайн оплаты", null=True, blank=True,
+                                            help_text="Время, до которого нужно оплатить (за 4 часа до занятия)")
+    paid_at = models.DateTimeField("Дата оплаты", null=True, blank=True)
+    amount_paid = models.DecimalField("Сумма оплаты", max_digits=10, decimal_places=2, default=0)
+    comment = models.TextField("Комментарий", blank=True)
+
+    class Meta:
+        verbose_name = "Запись на занятие"
+        verbose_name_plural = "Записи на занятия"
+        unique_together = ['session', 'client']
+        ordering = ['-booked_at']
+
+    def __str__(self):
+        return f"{self.client} -> {self.session} ({self.get_status_display()})"
+    
+    def save(self, *args, **kwargs):
+        # Автоматически устанавливаем дедлайн оплаты (за 4 часа до занятия)
+        if not self.payment_deadline and self.session:
+            from datetime import timedelta
+            self.payment_deadline = self.session.date_time - timedelta(hours=4)
         super().save(*args, **kwargs)
 
 
+class PaymentTransaction(models.Model):
+    """Детализированная история всех финансовых операций"""
+    TRANSACTION_TYPES = [
+        ('deposit', 'Пополнение баланса'),
+        ('debit', 'Списание за занятие'),
+        ('refund', 'Возврат средств'),
+        ('adjustment', 'Корректировка баланса'),
+    ]
+    
+    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transactions', 
+                               verbose_name="Клиент")
+    transaction_type = models.CharField("Тип операции", max_length=20, choices=TRANSACTION_TYPES)
+    amount = models.DecimalField("Сумма", max_digits=10, decimal_places=2)
+    balance_before = models.DecimalField("Баланс до операции", max_digits=10, decimal_places=2)
+    balance_after = models.DecimalField("Баланс после операции", max_digits=10, decimal_places=2)
+    booking = models.ForeignKey(Booking, on_delete=models.SET_NULL, null=True, blank=True, 
+                                verbose_name="Запись", related_name='transactions')
+    comment = models.TextField("Комментарий", blank=True)
+    created_at = models.DateTimeField("Дата создания", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Финансовая операция"
+        verbose_name_plural = "Финансовые операции"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        sign = '+' if self.transaction_type == 'deposit' else '-'
+        return f"{self.client}: {sign}{self.amount} руб. ({self.get_transaction_type_display()})"
+
+
 class Attendance(models.Model):
-    """Модель посещаемости"""
+    """Модель посещаемости (для статистики после занятия)"""
     session = models.ForeignKey(ClassSession, on_delete=models.CASCADE, verbose_name="Занятие")
-    client = models.ForeignKey('User', on_delete=models.CASCADE, verbose_name="Клиент")
+    client = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Клиент")
     visited_at = models.DateTimeField("Дата посещения", auto_now_add=True)
     status = models.CharField(
         "Статус",
@@ -131,7 +256,7 @@ class Attendance(models.Model):
 
 
 class Payment(models.Model):
-    """Модель оплаты занятий клиентами"""
+    """Модель оплаты занятий клиентами (для прямого пополнения баланса)"""
     PAYMENT_TYPES = [
         ('single', 'Разовое занятие'),
         ('subscription', 'Абонемент'),
@@ -144,7 +269,7 @@ class Payment(models.Model):
         ('refunded', 'Возвращено'),
     ]
 
-    client = models.ForeignKey('User', on_delete=models.CASCADE, verbose_name="Клиент")
+    client = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Клиент")
     amount = models.DecimalField("Сумма", max_digits=10, decimal_places=2)
     payment_type = models.CharField("Тип оплаты", max_length=20, choices=PAYMENT_TYPES, default='single')
     status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default='paid')
