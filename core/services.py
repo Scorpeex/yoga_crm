@@ -5,7 +5,7 @@
 from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
-from core.models import Booking, PaymentTransaction, ClassSession
+from core.models import Booking, PaymentTransaction, ClassSession, Subscription
 
 
 class PaymentService:
@@ -24,7 +24,8 @@ class PaymentService:
         bookings_to_charge = Booking.objects.filter(
             status='confirmed',
             payment_deadline__lte=now,
-            paid_at__isnull=True
+            paid_at__isnull=True,
+            is_subscription_used=False  # Исключаем записи, оплаченные абонементом
         ).select_related('session', 'client', 'session__tariff')
         
         charged_count = 0
@@ -87,12 +88,78 @@ class PaymentService:
         return booking
     
     @staticmethod
+    def use_subscription_for_booking(booking, subscription):
+        """
+        Использование абонемента для оплаты записи
+        """
+        if not subscription.is_valid():
+            raise ValueError("Абонемент недействителен")
+        
+        # Проверяем, что тариф абонемента соответствует тарифу занятия
+        if subscription.tariff != booking.session.tariff:
+            raise ValueError("Тариф абонемента не соответствует тарифу занятия")
+        
+        # Сохраняем баланс до операции (для транзакции)
+        balance_before = booking.client.balance
+        
+        # Используем занятие из абонемента
+        subscription.use_session()
+        
+        # Обновляем запись
+        booking.is_subscription_used = True
+        booking.subscription = subscription
+        booking.paid_at = timezone.now()
+        booking.status = 'paid'
+        booking.amount_paid = 0  # Так как оплачено абонементом
+        booking.save()
+        
+        # Создаем транзакцию использования абонемента (информационную)
+        PaymentTransaction.objects.create(
+            client=booking.client,
+            transaction_type='subscription_use',
+            amount=booking.session.get_current_price(),
+            balance_before=balance_before,
+            balance_after=balance_before,  # Баланс не меняется
+            booking=booking,
+            subscription=subscription,
+            comment=f"Использование абонемента: {subscription.tariff.name}. Осталось занятий: {subscription.sessions_remaining}"
+        )
+        
+        return booking
+    
+    @staticmethod
     def refund_booking(booking, reason=""):
         """
         Возврат средств за отмененное занятие
         """
         if booking.status != 'paid' or not booking.paid_at:
             raise ValueError("Запись не оплачена")
+        
+        # Если было использовано абонемент - возвращаем занятие в абонемент
+        if booking.is_subscription_used and booking.subscription:
+            subscription = booking.subscription
+            subscription.sessions_remaining += 1
+            if subscription.status == 'used_up':
+                subscription.status = 'active'
+            subscription.save()
+            
+            booking.is_subscription_used = False
+            booking.subscription = None
+            booking.status = 'cancelled'
+            booking.save()
+            
+            # Создаем транзакцию возврата абонемента
+            PaymentTransaction.objects.create(
+                client=booking.client,
+                transaction_type='subscription_use',
+                amount=booking.amount_paid,
+                balance_before=booking.client.balance,
+                balance_after=booking.client.balance,
+                booking=booking,
+                subscription=subscription,
+                comment=f"Возврат занятия в абонемент: {reason}" if reason else "Возврат занятия в абонемент"
+            )
+            return booking
         
         client = booking.client
         amount = booking.amount_paid
@@ -167,6 +234,46 @@ class PaymentService:
         return client
     
     @staticmethod
+    def purchase_subscription(client, tariff, comment=""):
+        """
+        Покупка абонемента для клиента
+        """
+        if not tariff.is_subscription_available:
+            raise ValueError("Для этого тарифа недоступны абонементы")
+        
+        if client.balance < tariff.subscription_price:
+            raise ValueError(f"Недостаточно средств. Стоимость абонемента: {tariff.subscription_price}")
+        
+        # Сохраняем баланс до операции
+        balance_before = client.balance
+        
+        # Списываем стоимость абонемента
+        client.balance -= tariff.subscription_price
+        client.save()
+        
+        # Создаем абонемент
+        subscription = Subscription.objects.create(
+            client=client,
+            tariff=tariff,
+            sessions_total=tariff.subscription_sessions_count,
+            total_price=tariff.subscription_price,
+            comment=comment
+        )
+        
+        # Создаем транзакцию покупки абонемента
+        PaymentTransaction.objects.create(
+            client=client,
+            transaction_type='subscription_purchase',
+            amount=tariff.subscription_price,
+            balance_before=balance_before,
+            balance_after=client.balance,
+            subscription=subscription,
+            comment=f"Покупка абонемента: {tariff.name} ({tariff.subscription_sessions_count} занятий)"
+        )
+        
+        return subscription
+    
+    @staticmethod
     def get_available_sessions_for_user(user):
         """
         Получение списка занятий, доступных для записи пользователю
@@ -213,6 +320,17 @@ class PaymentService:
             if booked_count >= 2:
                 return False, "Группа полностью заполнена"
         
+        # Проверяем, есть ли действующий абонемент для этого тарифа
+        active_subscription = Subscription.objects.filter(
+            client=user,
+            tariff=session.tariff,
+            status='active'
+        ).first()
+        
+        if active_subscription and active_subscription.is_valid():
+            # Если есть абонемент - разрешаем запись без проверки баланса
+            return True, "OK"
+        
         # Проверяем баланс (с учетом возможной полной стоимости для сплита)
         required_amount = session.get_current_price()
         if user.balance < required_amount:
@@ -221,7 +339,7 @@ class PaymentService:
         return True, "OK"
     
     @staticmethod
-    def create_booking(user, session, comment=""):
+    def create_booking(user, session, comment="", use_subscription=False):
         """
         Создание записи на занятие
         """
@@ -239,5 +357,16 @@ class PaymentService:
             comment=comment,
             amount_paid=session.get_current_price()
         )
+        
+        # Если запрошено использование абонемента - используем его
+        if use_subscription:
+            active_subscription = Subscription.objects.filter(
+                client=user,
+                tariff=session.tariff,
+                status='active'
+            ).first()
+            
+            if active_subscription and active_subscription.is_valid():
+                PaymentService.use_subscription_for_booking(booking, active_subscription)
         
         return booking
