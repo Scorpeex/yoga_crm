@@ -47,6 +47,13 @@
                 <button type="submit" class="btn btn-primary">Войти</button>
             </div>
             
+            <div class="telegram-auth-section">
+                <div class="divider">
+                    <span>или войдите через</span>
+                </div>
+                <div id="telegram-login-container"></div>
+            </div>
+            
             <div class="auth-links">
                 <p>Нет аккаунта? <a href="{% url 'register' %}">Зарегистрироваться</a></p>
                 <p class="admin-login-link"><a href="{% url 'admin:index' %}">Вход для администратора</a></p>
@@ -209,7 +216,110 @@ body {
         padding: 25px;
     }
 }
+
+/* Telegram auth section styles */
+.telegram-auth-section {
+    margin-top: 25px;
+    text-align: center;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.divider span {
+    padding: 0 15px;
+    color: #888;
+    font-size: 14px;
+}
+
+#telegram-login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50px;
+}
 </style>
+<script>
+// Telegram Login Widget script
+(function() {
+    // Создаем скрипт виджета Telegram
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.setAttribute('data-telegram-login', 'YOUR_BOT_USERNAME'); // ЗАМЕНИТЕ на username вашего бота
+    script.setAttribute('data-size', 'large');
+    script.setAttribute('data-radius', '8');
+    script.setAttribute('data-request-access', 'write');
+    script.setAttribute('data-userpic', 'false');
+    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+    
+    // Функция обработки успешной авторизации
+    window.onTelegramAuth = function(user) {
+        // Отправляем данные на сервер для проверки и входа
+        fetch('/api/auth/telegram/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: new URLSearchParams({
+                'id': user.id,
+                'first_name': user.first_name,
+                'last_name': user.last_name || '',
+                'username': user.username || '',
+                'photo_url': user.photo_url || '',
+                'auth_date': user.auth_date,
+                'hash': user.hash
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Перенаправляем пользователя в личный кабинет
+                window.location.href = data.redirect_url || '/profile/';
+            } else {
+                alert('Ошибка авторизации: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при авторизации. Попробуйте ещё раз.');
+        });
+    };
+    
+    // Вставляем скрипт в контейнер
+    const container = document.getElementById('telegram-login-container');
+    if (container) {
+        container.appendChild(script);
+    }
+    
+    // Функция для получения CSRF токена
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+})();
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const phoneInput = document.getElementById('id_username');
