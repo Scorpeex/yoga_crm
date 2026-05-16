@@ -85,6 +85,8 @@ class User(AbstractUser):
     created_at = models.DateTimeField("Дата регистрации", auto_now_add=True)
     is_active = models.BooleanField("Активен", default=True)
     balance = models.DecimalField("Баланс", max_digits=10, decimal_places=2, default=0)
+    telegram_id = models.BigIntegerField("Telegram ID", null=True, blank=True, unique=True, 
+                                             help_text="Уникальный идентификатор пользователя в Telegram")
     allowed_tariffs = models.ManyToManyField(Tariff, blank=True, 
                                              verbose_name="Доступные тарифы",
                                              help_text="Тарифы, которые доступны пользователю для записи")

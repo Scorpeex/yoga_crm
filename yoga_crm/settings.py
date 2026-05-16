@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +21,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ktxd24q3*ss47@)dp!&4_f!05+fvzqo2(t20m@fm(u^7hi#8ll'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-ktxd24q3*ss47@)dp!&4_f!05+fvzqo2(t20m@fm(u^7hi#8ll')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver']
+
+# Telegram Bot Token для авторизации
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 
 # Timezone settings - Новосибирск +7 UTC
 TIME_ZONE = 'Asia/Novosibirsk'

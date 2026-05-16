@@ -9,8 +9,10 @@ from django.db import transaction
 from datetime import datetime, timedelta
 from django.utils import timezone
 import pytz
+from django.conf import settings
 from .models import ClassSession, Hall, ClassType, User, Attendance
 from .forms import RegistrationForm, LoginForm
+from .telegram_auth import validate_telegram_auth_data
 from django.db.models import Q
 
 
@@ -678,5 +680,88 @@ def profile_view(request):
         'is_staff': client.is_staff,
     }
     return render(request, 'core/profile.html', context)
+
+
+@require_http_methods(["POST"])
+def telegram_auth(request):
+    """
+    Обработчик авторизации через Telegram
+    
+    Получает данные от Telegram Login Widget, проверяет подпись,
+    находит или создаёт пользователя, выполняет вход.
+    """
+    if not settings.TELEGRAM_BOT_TOKEN:
+        return JsonResponse({
+            'success': False,
+            'error': 'Telegram бот не настроен. Обратитесь к администратору.'
+        }, status=500)
+    
+    # Получаем данные из POST запроса
+    telegram_data = {}
+    for key in ['id', 'first_name', 'last_name', 'username', 'photo_url', 'auth_date', 'hash']:
+        if key in request.POST:
+            telegram_data[key] = request.POST[key]
+    
+    # Проверяем данные через модуль телеграм аутентификации
+    validated_data = validate_telegram_auth_data(telegram_data, settings.TELEGRAM_BOT_TOKEN)
+    
+    if not validated_data:
+        return JsonResponse({
+            'success': False,
+            'error': 'Неверные данные авторизации. Попробуйте ещё раз.'
+        }, status=400)
+    
+    telegram_id = validated_data['telegram_id']
+    
+    try:
+        with transaction.atomic():
+            # Ищем пользователя по telegram_id
+            user = User.objects.filter(telegram_id=telegram_id).first()
+            
+            if user:
+                # Пользователь найден - просто выполняем вход
+                created = False
+            else:
+                # Пользователь не найден - создаём нового
+                # Генерируем уникальный username на основе telegram_id
+                username = f"tg_{telegram_id}"
+                
+                user = User.objects.create_user(
+                    username=username,
+                    first_name=validated_data['first_name'],
+                    last_name=validated_data['last_name'],
+                    telegram_id=telegram_id,
+                )
+                
+                # Сохраняем username из Telegram если есть
+                if validated_data.get('username'):
+                    # Пробуем использовать username из Telegram как phone (если свободен)
+                    tg_username = validated_data['username']
+                    if not User.objects.filter(username=tg_username).exclude(id=user.id).exists():
+                        user.username = tg_username
+                        user.save()
+                
+                created = True
+            
+            # Выполняем вход пользователя
+            login(request, user)
+            
+            return JsonResponse({
+                'success': True,
+                'created': created,
+                'redirect_url': '/profile/',
+                'user': {
+                    'id': user.id,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'telegram_id': user.telegram_id,
+                }
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Ошибка при авторизации: {str(e)}'
+        }, status=500)
 
 
