@@ -40,4 +40,6 @@ urlpatterns = [
     
     # Telegram авторизация
     path('api/auth/telegram/', views.telegram_auth, name='telegram_auth'),
+    # VK авторизация
+    path('api/auth/vk/', views.vk_auth, name='vk_auth'),
 ]

@@ -13,6 +13,7 @@ from django.conf import settings
 from .models import ClassSession, Hall, ClassType, User, Attendance
 from .forms import RegistrationForm, LoginForm
 from .telegram_auth import validate_telegram_auth_data
+from .vk_auth import validate_vk_auth_data
 from django.db.models import Q
 
 
@@ -755,6 +756,81 @@ def telegram_auth(request):
                     'first_name': user.first_name,
                     'last_name': user.last_name,
                     'telegram_id': user.telegram_id,
+                }
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Ошибка при авторизации: {str(e)}'
+        }, status=500)
+
+
+@require_http_methods(["POST"])
+def vk_auth(request):
+    """
+    Обработчик авторизации через ВКонтакте
+    
+    Получает данные от VK ID Widget, проверяет подпись,
+    находит или создаёт пользователя, выполняет вход.
+    """
+    if not hasattr(settings, 'VK_CLIENT_SECRET') or not settings.VK_CLIENT_SECRET:
+        return JsonResponse({
+            'success': False,
+            'error': 'VK авторизация не настроена. Обратитесь к администратору.'
+        }, status=500)
+    
+    # Получаем данные из POST запроса
+    vk_data = {}
+    for key in ['id', 'first_name', 'last_name', 'photo_url', 'auth_date', 'hash']:
+        if key in request.POST:
+            vk_data[key] = request.POST[key]
+    
+    # Проверяем данные через модуль VK аутентификации
+    validated_data = validate_vk_auth_data(vk_data, settings.VK_CLIENT_SECRET)
+    
+    if not validated_data:
+        return JsonResponse({
+            'success': False,
+            'error': 'Неверные данные авторизации. Попробуйте ещё раз.'
+        }, status=400)
+    
+    vk_id = validated_data['vk_id']
+    
+    try:
+        with transaction.atomic():
+            # Ищем пользователя по vk_id
+            user = User.objects.filter(vk_id=vk_id).first()
+            
+            if user:
+                # Пользователь найден - просто выполняем вход
+                created = False
+            else:
+                # Пользователь не найден - создаём нового
+                # Генерируем уникальный username на основе vk_id
+                username = f"vk_{vk_id}"
+                
+                user = User.objects.create_user(
+                    username=username,
+                    first_name=validated_data['first_name'],
+                    last_name=validated_data['last_name'],
+                    vk_id=vk_id,
+                )
+                
+                created = True
+            
+            # Выполняем вход пользователя
+            login(request, user)
+            
+            return JsonResponse({
+                'success': True,
+                'created': created,
+                'redirect_url': '/profile/',
+                'user': {
+                    'id': user.id,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'vk_id': user.vk_id,
                 }
             })
             
