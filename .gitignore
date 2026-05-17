@@ -1,9 +1,10 @@
-```
 # Compiled and build artifacts
 *.pyc
 __pycache__/
 *.o
 *.obj
+dist/
+build/
 
 # Dependencies
 .venv/
@@ -18,35 +19,26 @@ node_modules/
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
 # Editors
 .vscode/
 .idea/
 
-# Coverage reports
+# Coverage
+.coverage
 coverage/
 htmlcov/
-.coverage
-
-# Distribution artifacts
-dist/
-build/
-target/
 
 # Python specific
-*.pyc
 *.pyo
 *.pyd
 .Python
 *.so
 
-# Cache directories
-.mypy_cache/
-.pytest_cache/
-.hypothesis/
-
-# OS generated files
+# System files
 .DS_Store
 Thumbs.db
-```
+
+# Original rules preserved
+*.log
