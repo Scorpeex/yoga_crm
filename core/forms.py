@@ -41,11 +41,19 @@ class RegistrationForm(UserCreationForm):
         widgets = {
             'password1': forms.PasswordInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Пароль'
+                'placeholder': 'Пароль',
+                'autocomplete': 'new-password'
             }),
             'password2': forms.PasswordInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Подтвердите пароль'
+                'placeholder': 'Подтвердите пароль',
+                'autocomplete': 'new-password'
+            }),
+            'phone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '+7 (___) ___-__-__',
+                'id': 'id_phone',
+                'autocomplete': 'tel'
             }),
         }
 
@@ -86,14 +94,16 @@ class LoginForm(AuthenticationForm):
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': '+7 (___) ___-__-__',
-            'id': 'id_username'
+            'id': 'id_username',
+            'autocomplete': 'tel'
         })
     )
     password = forms.CharField(
         label="Пароль",
         widget=forms.PasswordInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Введите пароль'
+            'placeholder': 'Введите пароль',
+            'autocomplete': 'current-password'
         })
     )
 
