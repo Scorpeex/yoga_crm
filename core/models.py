@@ -87,6 +87,8 @@ class User(AbstractUser):
     balance = models.DecimalField("Баланс", max_digits=10, decimal_places=2, default=0)
     telegram_id = models.BigIntegerField("Telegram ID", null=True, blank=True, unique=True, 
                                              help_text="Уникальный идентификатор пользователя в Telegram")
+    vk_id = models.BigIntegerField("VK ID", null=True, blank=True, unique=True, 
+                                       help_text="Уникальный идентификатор пользователя ВКонтакте")
     allowed_tariffs = models.ManyToManyField(Tariff, blank=True, 
                                              verbose_name="Доступные тарифы",
                                              help_text="Тарифы, которые доступны пользователю для записи")
