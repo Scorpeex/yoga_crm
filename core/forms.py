@@ -30,7 +30,8 @@ class RegistrationForm(UserCreationForm):
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': '+7 (___) ___-__-__',
-            'id': 'id_phone'
+            'id': 'id_phone',
+            'autocomplete': 'tel'
         }),
         help_text="Введите номер телефона в формате +7XXXXXXXXXX"
     )
