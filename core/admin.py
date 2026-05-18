@@ -67,7 +67,7 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ['is_staff', 'is_superuser', 'is_active', 'role']
     search_fields = ['username', 'first_name', 'last_name', 'email', 'phone']
     ordering = ['last_name', 'first_name']
-    filter_horizontal = ['allowed_tariffs']
+    filter_horizontal = ['allowed_tariffs', 'groups', 'user_permissions']
     
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
@@ -189,6 +189,10 @@ class RentPaymentAdmin(admin.ModelAdmin):
 # Снимаем стандартную регистрацию Group
 admin.site.unregister(Group)
 
+class GroupAdmin(admin.ModelAdmin):
+    list_display = ['name']
+    filter_horizontal = ['permissions']
+
 # Регистрируем все модели в стандартном сайте админа
 admin.site.register(Tariff, TariffAdmin)
 admin.site.register(ClassType, ClassTypeAdmin)
@@ -202,4 +206,4 @@ admin.site.register(Attendance, AttendanceAdmin)
 admin.site.register(Payment, PaymentAdmin)
 admin.site.register(RentPayment, RentPaymentAdmin)
 admin.site.register(UserDefaultSettings, UserDefaultSettingsAdmin)
-admin.site.register(Group)
+admin.site.register(Group, GroupAdmin)
