@@ -85,6 +85,19 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('username', 'password1', 'password2', 'email', 'first_name', 'last_name', 'phone', 'role'),
         }),
     )
+    
+    def save_model(self, request, obj, form, change):
+        """Сохраняем пользователя и синхронизируем права из групп"""
+        super().save_model(request, obj, form, change)
+        
+        # Синхронизируем права: добавляем все права из выбранных групп
+        all_group_permissions = set()
+        for group in obj.groups.all():
+            all_group_permissions.update(group.permissions.all())
+        
+        # Добавляем права из групп к индивидуальным правам пользователя
+        if all_group_permissions:
+            obj.user_permissions.add(*all_group_permissions)
 
 
 class HallAdmin(admin.ModelAdmin):

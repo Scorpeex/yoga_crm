@@ -1,1 +1,10 @@
-Nothing should be ignored in this case, as the only change is a modification to a source template file (`core/templates/core/includes/sidebar.html`) which is a legitimate source file that should be tracked in version control. No build artifacts, dependencies, or temporary files are present in the changes.
+```
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database
+db.sqlite3
+```
