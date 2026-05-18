@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import Tariff, ClassType, User, Hall, ClassSession, Booking, PaymentTransaction, Attendance, Payment, RentPayment, Subscription, UserDefaultSettings
+from .widgets import CheckboxSelectMultiplePermissions
 
 
 class UserDefaultSettingsAdmin(admin.ModelAdmin):
@@ -67,7 +68,10 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ['is_staff', 'is_superuser', 'is_active', 'role']
     search_fields = ['username', 'first_name', 'last_name', 'email', 'phone']
     ordering = ['last_name', 'first_name']
-    filter_horizontal = ['allowed_tariffs', 'groups', 'user_permissions']
+    filter_horizontal = ['allowed_tariffs', 'groups']
+    
+    # Используем кастомный виджет для прав
+    formfield_overrides = {}
     
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
@@ -85,6 +89,22 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('username', 'password1', 'password2', 'email', 'first_name', 'last_name', 'phone', 'role'),
         }),
     )
+    
+    def get_form(self, request, obj=None, **kwargs):
+        """Переопределяем форму для использования кастомного виджета прав"""
+        from django.contrib.auth.models import Permission
+        from django import forms
+        
+        form = super().get_form(request, obj, **kwargs)
+        
+        # Заменяем виджет для user_permissions
+        if 'user_permissions' in form.base_fields:
+            permissions_queryset = Permission.objects.all().select_related('content_type')
+            form.base_fields['user_permissions'].widget = CheckboxSelectMultiplePermissions(
+                choices=[(p.id, f"{p.content_type.app_label} | {p.content_type.model} | {p.name}") for p in permissions_queryset]
+            )
+        
+        return form
     
     def save_model(self, request, obj, form, change):
         """Сохраняем пользователя и синхронизируем права из групп"""
@@ -204,7 +224,22 @@ admin.site.unregister(Group)
 
 class GroupAdmin(admin.ModelAdmin):
     list_display = ['name']
-    filter_horizontal = ['permissions']
+    
+    def get_form(self, request, obj=None, **kwargs):
+        """Переопределяем форму для использования кастомного виджета прав"""
+        from django.contrib.auth.models import Permission
+        from django import forms
+        
+        form = super().get_form(request, obj, **kwargs)
+        
+        # Заменяем виджет для permissions
+        if 'permissions' in form.base_fields:
+            permissions_queryset = Permission.objects.all().select_related('content_type')
+            form.base_fields['permissions'].widget = CheckboxSelectMultiplePermissions(
+                choices=[(p.id, f"{p.content_type.app_label} | {p.content_type.model} | {p.name}") for p in permissions_queryset]
+            )
+        
+        return form
 
 # Регистрируем все модели в стандартном сайте админа
 admin.site.register(Tariff, TariffAdmin)
