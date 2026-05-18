@@ -443,3 +443,60 @@ class RentPayment(models.Model):
 
     def __str__(self):
         return f"{self.hall} - {self.rent_date} - {self.amount} руб."
+
+
+class GroupPermissionsSyncHandler:
+    """
+    Обработчик для синхронизации прав пользователей при изменении прав группы.
+    При изменении прав группы, все пользователи этой группы получают обновленные права.
+    """
+    
+    @staticmethod
+    def sync_group_permissions(sender, instance, action, pk_set, **kwargs):
+        """
+        Сигнал для синхронизации прав всех пользователей группы при изменении прав группы.
+        """
+        if action == 'post_add':
+            # Права добавлены в группу - добавляем их всем пользователям группы
+            if pk_set:
+                from django.contrib.auth.models import Permission
+                permissions = Permission.objects.filter(pk__in=pk_set)
+                # Получаем всех пользователей этой группы
+                users = instance.user_set.all()
+                for user in users:
+                    user.user_permissions.add(*permissions)
+        
+        elif action == 'post_remove':
+            # Права удалены из группы - удаляем их у всех пользователей группы
+            # (только если эти права не принадлежат другим группам пользователя)
+            if pk_set:
+                from django.contrib.auth.models import Permission
+                permissions_to_remove = Permission.objects.filter(pk__in=pk_set)
+                users = instance.user_set.all()
+                
+                for user in users:
+                    # Проверяем, есть ли у пользователя эти права от других групп
+                    for perm in permissions_to_remove:
+                        # Получаем все группы пользователя
+                        user_groups = user.groups.all()
+                        # Проверяем, есть ли это право в других группах
+                        has_permission_from_other_group = False
+                        for group in user_groups:
+                            if group != instance and perm in group.permissions.all():
+                                has_permission_from_other_group = True
+                                break
+                        
+                        # Если право есть только в этой группе, удаляем его у пользователя
+                        if not has_permission_from_other_group:
+                            user.user_permissions.remove(perm)
+    
+    @classmethod
+    def connect(cls):
+        """Подключить обработчик к сигналу m2m_changed для модели Group"""
+        from django.db.models.signals import m2m_changed
+        from django.contrib.auth.models import Group
+        
+        m2m_changed.connect(
+            cls.sync_group_permissions,
+            sender=Group.permissions.through
+        )
