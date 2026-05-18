@@ -3,7 +3,36 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import Tariff, ClassType, User, Hall, ClassSession, Booking, PaymentTransaction, Attendance, Payment, RentPayment, Subscription
+from .models import Tariff, ClassType, User, Hall, ClassSession, Booking, PaymentTransaction, Attendance, Payment, RentPayment, Subscription, UserDefaultSettings
+
+
+class UserDefaultSettingsAdmin(admin.ModelAdmin):
+    """Админка для настроек новых пользователей"""
+    list_display = ['__str__', 'default_role', 'default_balance']
+    filter_horizontal = ['default_tariffs', 'default_groups']
+    
+    fieldsets = (
+        ('Тарифы по умолчанию', {
+            'fields': ('default_tariffs',),
+            'description': 'Выберите тарифы, которые будут автоматически назначаться новым пользователям при регистрации'
+        }),
+        ('Группы прав доступа по умолчанию', {
+            'fields': ('default_groups',),
+            'description': 'Выберите группы Django, которые будут автоматически назначаться новым пользователям'
+        }),
+        ('Роль и баланс по умолчанию', {
+            'fields': ('default_role', 'default_balance'),
+            'description': 'Роль пользователя и начальный баланс для новых пользователей'
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        # Разрешаем создание только одного объекта
+        return not UserDefaultSettings.objects.exists()
+    
+    def has_delete_permission(self, request, obj=None):
+        # Запрещаем удаление, чтобы всегда были настройки по умолчанию
+        return False
 
 
 class TariffAdmin(admin.ModelAdmin):
@@ -172,4 +201,5 @@ admin.site.register(Subscription, SubscriptionAdmin)
 admin.site.register(Attendance, AttendanceAdmin)
 admin.site.register(Payment, PaymentAdmin)
 admin.site.register(RentPayment, RentPaymentAdmin)
+admin.site.register(UserDefaultSettings, UserDefaultSettingsAdmin)
 admin.site.register(Group)

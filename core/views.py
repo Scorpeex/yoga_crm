@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 import pytz
 from django.conf import settings
-from .models import ClassSession, Hall, ClassType, User, Attendance
+from .models import ClassSession, Hall, ClassType, User, Attendance, UserDefaultSettings
 from .forms import RegistrationForm, LoginForm
 from .telegram_auth import validate_telegram_auth_data
 from .vk_auth import validate_vk_auth_data
@@ -598,7 +598,25 @@ def register_view(request):
                 user.username = form.cleaned_data.get('phone')
                 user.first_name = form.cleaned_data.get('first_name')
                 user.last_name = form.cleaned_data.get('last_name')
+                
+                # Получаем настройки по умолчанию
+                default_settings = UserDefaultSettings.get_defaults()
+                
+                # Применяем роль по умолчанию
+                user.role = default_settings.default_role
+                
+                # Применяем баланс по умолчанию
+                user.balance = default_settings.default_balance
+                
                 user.save()
+                
+                # Назначаем тарифы по умолчанию
+                if default_settings.default_tariffs.exists():
+                    user.allowed_tariffs.set(default_settings.default_tariffs.all())
+                
+                # Назначаем группы по умолчанию
+                if default_settings.default_groups.exists():
+                    user.groups.set(default_settings.default_groups.all())
                 
                 # Сохраняем телефон в профиль клиента
                 if hasattr(user, 'client_profile'):
@@ -734,6 +752,20 @@ def telegram_auth(request):
                     telegram_id=telegram_id,
                 )
                 
+                # Получаем настройки по умолчанию и применяем их
+                default_settings = UserDefaultSettings.get_defaults()
+                user.role = default_settings.default_role
+                user.balance = default_settings.default_balance
+                user.save()
+                
+                # Назначаем тарифы по умолчанию
+                if default_settings.default_tariffs.exists():
+                    user.allowed_tariffs.set(default_settings.default_tariffs.all())
+                
+                # Назначаем группы по умолчанию
+                if default_settings.default_groups.exists():
+                    user.groups.set(default_settings.default_groups.all())
+                
                 # Сохраняем username из Telegram если есть
                 if validated_data.get('username'):
                     # Пробуем использовать username из Telegram как phone (если свободен)
@@ -816,6 +848,20 @@ def vk_auth(request):
                     last_name=validated_data['last_name'],
                     vk_id=vk_id,
                 )
+                
+                # Получаем настройки по умолчанию и применяем их
+                default_settings = UserDefaultSettings.get_defaults()
+                user.role = default_settings.default_role
+                user.balance = default_settings.default_balance
+                user.save()
+                
+                # Назначаем тарифы по умолчанию
+                if default_settings.default_tariffs.exists():
+                    user.allowed_tariffs.set(default_settings.default_tariffs.all())
+                
+                # Назначаем группы по умолчанию
+                if default_settings.default_groups.exists():
+                    user.groups.set(default_settings.default_groups.all())
                 
                 created = True
             

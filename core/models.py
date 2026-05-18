@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
 import uuid
 from datetime import timedelta
 
@@ -108,6 +108,31 @@ class User(AbstractUser):
     @property
     def is_admin(self):
         return self.role == 'admin'
+
+
+class UserDefaultSettings(models.Model):
+    """Настройки по умолчанию для новых пользователей"""
+    default_tariffs = models.ManyToManyField(Tariff, blank=True, 
+                                             verbose_name="Тарифы по умолчанию",
+                                             help_text="Тарифы, которые будут автоматически назначаться новым пользователям")
+    default_groups = models.ManyToManyField(Group, blank=True, 
+                                            verbose_name="Группы по умолчанию",
+                                            help_text="Группы прав доступа, которые будут автоматически назначаться новым пользователям")
+    default_role = models.CharField("Роль по умолчанию", max_length=20, choices=User.ROLE_CHOICES, default='student')
+    default_balance = models.DecimalField("Баланс по умолчанию", max_digits=10, decimal_places=2, default=0)
+    
+    class Meta:
+        verbose_name = "Настройки новых пользователей"
+        verbose_name_plural = "Настройки новых пользователей"
+    
+    def __str__(self):
+        return "Настройки по умолчанию для новых пользователей"
+    
+    @classmethod
+    def get_defaults(cls):
+        """Получить текущие настройки по умолчанию (первый объект или создать)"""
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj
 
 
 class Hall(models.Model):
