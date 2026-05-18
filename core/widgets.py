@@ -15,28 +15,31 @@ class CheckboxSelectMultiplePermissions(forms.CheckboxSelectMultiple):
         grouped_choices = {}
         current_value = [str(v) for v in (value or [])]
         
-        for option in context['widget']['options']:
-            label = option['label']
-            val = option['value']
-            selected = option['selected']
-            
-            parts = str(label).split(' | ')
-            if len(parts) >= 2:
-                group_name = f"{parts[0]} <span class='text-muted'>| {parts[1]}</span>"
-                action_label = parts[2] if len(parts) > 2 else label
-            else:
-                group_name = 'Прочее'
-                action_label = label
+        # optgroups - это список кортежей (group_name, options, group_index)
+        # Для CheckboxSelectMultiple group_name обычно None
+        for group_name, options, group_index in context['widget']['optgroups']:
+            for option in options:
+                label = option['label']
+                val = option['value']
+                selected = option['selected']
+                
+                parts = str(label).split(' | ')
+                if len(parts) >= 2:
+                    group_name_display = f"{parts[0]} <span class='text-muted'>| {parts[1]}</span>"
+                    action_label = parts[2] if len(parts) > 2 else label
+                else:
+                    group_name_display = 'Прочее'
+                    action_label = label
 
-            if group_name not in grouped_choices:
-                grouped_choices[group_name] = []
-            
-            grouped_choices[group_name].append({
-                'value': val,
-                'label': action_label,
-                'selected': selected,
-                'id': f"id_{name}_{val}"
-            })
+                if group_name_display not in grouped_choices:
+                    grouped_choices[group_name_display] = []
+                
+                grouped_choices[group_name_display].append({
+                    'value': val,
+                    'label': action_label,
+                    'selected': selected,
+                    'id': f"id_{name}_{val}"
+                })
 
         context['widget']['grouped_choices'] = grouped_choices
         return context
