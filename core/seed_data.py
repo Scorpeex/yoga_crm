@@ -157,6 +157,10 @@ def create_users(tariffs):
     """Создание пользователей"""
     print("Создание пользователей...")
     
+    # Получаем настройки по умолчанию
+    from core.models import UserDefaultSettings
+    default_settings = UserDefaultSettings.get_defaults()
+    
     # Администратор
     admin, _ = User.objects.get_or_create(
         username='admin',
@@ -195,12 +199,18 @@ def create_users(tariffs):
             'email': 'student1@example.com',
             'first_name': 'Анна',
             'last_name': 'Петрова',
-            'role': 'student',
+            'role': default_settings.default_role,
             'phone': '+7-900-111-22-33',
-            'balance': Decimal('12000.00')  # Достаточно для абонемента (9000) + немного на остаток
+            'balance': default_settings.default_balance
         }
     )
+    # Применяем тарифы по умолчанию и добавляем специфичные для этого пользователя
+    for tariff in default_settings.default_tariffs.all():
+        student1.allowed_tariffs.add(tariff)
     student1.allowed_tariffs.add(tariffs['group'])
+    # Применяем группы по умолчанию
+    for group in default_settings.default_groups.all():
+        student1.groups.add(group)
     student1.set_password('stud123')
     student1.save()
     
@@ -211,12 +221,18 @@ def create_users(tariffs):
             'email': 'student2@example.com',
             'first_name': 'Иван',
             'last_name': 'Сидоров',
-            'role': 'student',
+            'role': default_settings.default_role,
             'phone': '+7-900-444-55-66',
-            'balance': Decimal('5000.00')
+            'balance': default_settings.default_balance
         }
     )
+    # Применяем тарифы по умолчанию и добавляем специфичные для этого пользователя
+    for tariff in default_settings.default_tariffs.all():
+        student2.allowed_tariffs.add(tariff)
     student2.allowed_tariffs.add(tariffs['group'], tariffs['split'])
+    # Применяем группы по умолчанию
+    for group in default_settings.default_groups.all():
+        student2.groups.add(group)
     student2.set_password('stud123')
     student2.save()
     
@@ -227,12 +243,18 @@ def create_users(tariffs):
             'email': 'student3@example.com',
             'first_name': 'Ольга',
             'last_name': 'Смирнова',
-            'role': 'student',
+            'role': default_settings.default_role,
             'phone': '+7-900-777-88-99',
-            'balance': Decimal('15000.00')  # Достаточно для абонемента и других занятий
+            'balance': default_settings.default_balance
         }
     )
+    # Применяем тарифы по умолчанию и добавляем специфичные для этого пользователя
+    for tariff in default_settings.default_tariffs.all():
+        student3.allowed_tariffs.add(tariff)
     student3.allowed_tariffs.add(tariffs['group'], tariffs['split'], tariffs['individual'])
+    # Применяем группы по умолчанию
+    for group in default_settings.default_groups.all():
+        student3.groups.add(group)
     student3.set_password('stud123')
     student3.save()
     
@@ -243,12 +265,18 @@ def create_users(tariffs):
             'email': 'student4@example.com',
             'first_name': 'Дмитрий',
             'last_name': 'Козлов',
-            'role': 'student',
+            'role': default_settings.default_role,
             'phone': '+7-900-123-45-67',
-            'balance': Decimal('2000.00')
+            'balance': default_settings.default_balance
         }
     )
+    # Применяем тарифы по умолчанию и добавляем специфичные для этого пользователя
+    for tariff in default_settings.default_tariffs.all():
+        student4.allowed_tariffs.add(tariff)
     student4.allowed_tariffs.add(tariffs['split'])
+    # Применяем группы по умолчанию
+    for group in default_settings.default_groups.all():
+        student4.groups.add(group)
     student4.set_password('stud123')
     student4.save()
     
