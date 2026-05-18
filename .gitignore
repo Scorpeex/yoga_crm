@@ -4,46 +4,38 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
-# Database
-db.sqlite3
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# Dependencies
+.Python
+env/
 venv/
 .venv/
-.env/
-node_modules/
-
-# Build and distribution
-dist/
-build/
-target/
-
-# Logs
-*.log
-
-# Coverage
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
 .coverage
-coverage/
-htmlcov/
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.DS_Store
+Thumbs.db
+
+# Django
+*.pot
+*.py[co]
+*.mo
+*.pot
+*.po
+*~
+.svn/
+.DS_Store
+db.sqlite3
+db.sqlite3-journal
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*.tmp
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Testing
-.pytest_cache/
-.mypy_cache/
 ```
