@@ -3,20 +3,20 @@ from django import forms
 
 class CheckboxSelectMultiplePermissions(forms.CheckboxSelectMultiple):
     """
-    Виджет для отображения прав доступа в виде списка чекбоксов,
+    Виджет для отображения прав доступа в виде таблицы,
     сгруппированных по моделям (Приложение | Модель).
+    Колонки: Название прав, Add, Change, Delete, View.
     """
     template_name = 'core/admin/widgets/permissions_checkboxes.html'
 
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         
-        # Пересобираем данные для удобной группировки в шаблоне
+        # Пересобираем данные для табличного отображения
         grouped_choices = {}
         current_value = [str(v) for v in (value or [])]
         
         # optgroups - это список кортежей (group_name, options, group_index)
-        # Для CheckboxSelectMultiple group_name обычно None
         for group_name, options, group_index in context['widget']['optgroups']:
             for option in options:
                 label = option['label']
@@ -25,21 +25,48 @@ class CheckboxSelectMultiplePermissions(forms.CheckboxSelectMultiple):
                 
                 parts = str(label).split(' | ')
                 if len(parts) >= 2:
-                    group_name_display = f"{parts[0]} <span class='text-muted'>| {parts[1]}</span>"
+                    app_name = parts[0]
+                    model_name = parts[1]
                     action_label = parts[2] if len(parts) > 2 else label
+                    group_key = f"{app_name} | {model_name}"
                 else:
-                    group_name_display = 'Прочее'
+                    group_key = 'Прочее'
                     action_label = label
 
-                if group_name_display not in grouped_choices:
-                    grouped_choices[group_name_display] = []
+                if group_key not in grouped_choices:
+                    grouped_choices[group_key] = {
+                        'add': None,
+                        'change': None,
+                        'delete': None,
+                        'view': None,
+                    }
                 
-                grouped_choices[group_name_display].append({
-                    'value': val,
-                    'label': action_label,
-                    'selected': selected,
-                    'id': f"id_{name}_{val}"
-                })
+                # Определяем тип действия по метке
+                action_lower = action_label.lower()
+                if action_lower.startswith('add') or action_lower.startswith('добавить'):
+                    grouped_choices[group_key]['add'] = {
+                        'value': val,
+                        'selected': selected,
+                        'id': f"id_{name}_{val}"
+                    }
+                elif action_lower.startswith('change') or action_lower.startswith('изменить') or action_lower.startswith('менять'):
+                    grouped_choices[group_key]['change'] = {
+                        'value': val,
+                        'selected': selected,
+                        'id': f"id_{name}_{val}"
+                    }
+                elif action_lower.startswith('delete') or action_lower.startswith('удалить'):
+                    grouped_choices[group_key]['delete'] = {
+                        'value': val,
+                        'selected': selected,
+                        'id': f"id_{name}_{val}"
+                    }
+                elif action_lower.startswith('view') or action_lower.startswith('просмотр'):
+                    grouped_choices[group_key]['view'] = {
+                        'value': val,
+                        'selected': selected,
+                        'id': f"id_{name}_{val}"
+                    }
 
         context['widget']['grouped_choices'] = grouped_choices
         return context

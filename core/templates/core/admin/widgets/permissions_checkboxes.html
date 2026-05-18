@@ -1,43 +1,96 @@
 {% with id=widget.attrs.id %}
 <div class="permissions-checkboxes">
-  {% for group_name, choices in widget.grouped_choices.items %}
-    <div class="permission-group mb-3">
-      <h6 class="border-bottom pb-2 mb-2">{{ group_name|safe }}</h6>
-      <div class="row">
-        {% for choice in choices %}
-          <div class="col-md-6 col-lg-4 mb-2">
-            <div class="form-check">
-              <input 
-                type="checkbox" 
-                name="{{ widget.name }}" 
-                value="{{ choice.value }}" 
-                id="{{ choice.id }}"
-                {% if choice.selected %}checked{% endif %}
-                class="form-check-input"
-              >
-              <label class="form-check-label" for="{{ choice.id }}">
-                {{ choice.label }}
-              </label>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-  {% endfor %}
+  <table class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th style="width: 40%;">Права доступа</th>
+        <th class="text-center" style="width: 15%;">Add</th>
+        <th class="text-center" style="width: 15%;">Change</th>
+        <th class="text-center" style="width: 15%;">Delete</th>
+        <th class="text-center" style="width: 15%;">View</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for group_name, choices in widget.grouped_choices.items %}
+        <tr>
+          <td class="align-middle fw-bold">{{ group_name|safe }}</td>
+          <td class="text-center align-middle">
+            {% if choices.add %}
+              <div class="form-check d-flex justify-content-center">
+                <input 
+                  type="checkbox" 
+                  name="{{ widget.name }}" 
+                  value="{{ choices.add.value }}" 
+                  id="{{ choices.add.id }}"
+                  {% if choices.add.selected %}checked{% endif %}
+                  class="form-check-input"
+                >
+              </div>
+            {% endif %}
+          </td>
+          <td class="text-center align-middle">
+            {% if choices.change %}
+              <div class="form-check d-flex justify-content-center">
+                <input 
+                  type="checkbox" 
+                  name="{{ widget.name }}" 
+                  value="{{ choices.change.value }}" 
+                  id="{{ choices.change.id }}"
+                  {% if choices.change.selected %}checked{% endif %}
+                  class="form-check-input"
+                >
+              </div>
+            {% endif %}
+          </td>
+          <td class="text-center align-middle">
+            {% if choices.delete %}
+              <div class="form-check d-flex justify-content-center">
+                <input 
+                  type="checkbox" 
+                  name="{{ widget.name }}" 
+                  value="{{ choices.delete.value }}" 
+                  id="{{ choices.delete.id }}"
+                  {% if choices.delete.selected %}checked{% endif %}
+                  class="form-check-input"
+                >
+              </div>
+            {% endif %}
+          </td>
+          <td class="text-center align-middle">
+            {% if choices.view %}
+              <div class="form-check d-flex justify-content-center">
+                <input 
+                  type="checkbox" 
+                  name="{{ widget.name }}" 
+                  value="{{ choices.view.value }}" 
+                  id="{{ choices.view.id }}"
+                  {% if choices.view.selected %}checked{% endif %}
+                  class="form-check-input"
+                >
+              </div>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endwith %}
 
 <style>
-.permissions-checkboxes .permission-group h6 {
+.permissions-checkboxes .table {
+  margin-bottom: 0;
+}
+.permissions-checkboxes .table thead th {
   font-weight: 600;
   color: #495057;
-}
-.permissions-checkboxes .form-check-label {
-  cursor: pointer;
-  font-size: 0.9rem;
+  vertical-align: middle;
 }
 .permissions-checkboxes .form-check-input:checked {
   background-color: #0d6efd;
   border-color: #0d6efd;
+}
+.permissions-checkboxes tbody tr:hover {
+  background-color: #f8f9fa;
 }
 </style>
