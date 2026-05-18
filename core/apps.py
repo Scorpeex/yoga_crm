@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+from django.contrib.auth.models import User
 
 
 def sync_user_permissions_with_groups(sender, instance, action, pk_set, **kwargs):
@@ -7,6 +8,10 @@ def sync_user_permissions_with_groups(sender, instance, action, pk_set, **kwargs
     При добавлении пользователя в группу - добавляются права группы.
     При удалении пользователя из группы - права группы не удаляются (чтобы сохранить индивидуальные права).
     """
+    # Обрабатываем только изменения для пользователей, а не для групп
+    if not isinstance(instance, User):
+        return
+    
     if action == 'post_add':
         # Пользователя добавили в группу(ы) - добавляем права этих групп
         if pk_set:
