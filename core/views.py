@@ -925,7 +925,7 @@ def admin_dashboard(request):
     # Последние записи
     recent_bookings = Booking.objects.select_related(
         'client__user', 'session__class_type'
-    ).order_by('-created_at')[:10]
+    ).order_by('-booked_at')[:10]
     
     return render(request, 'core/admin/dashboard.html', {
         'total_clients': total_clients,
