@@ -15,7 +15,7 @@
         <tr>
           <td class="align-middle fw-bold">{{ group_name|safe }}</td>
           <td class="text-center align-middle">
-            {% if choices.add %}
+            {% if choices.add and choices.add.value %}
               <div class="form-check d-flex justify-content-center">
                 <input 
                   type="checkbox" 
@@ -26,10 +26,12 @@
                   class="form-check-input"
                 >
               </div>
+            {% else %}
+              <span class="text-muted">-</span>
             {% endif %}
           </td>
           <td class="text-center align-middle">
-            {% if choices.change %}
+            {% if choices.change and choices.change.value %}
               <div class="form-check d-flex justify-content-center">
                 <input 
                   type="checkbox" 
@@ -40,10 +42,12 @@
                   class="form-check-input"
                 >
               </div>
+            {% else %}
+              <span class="text-muted">-</span>
             {% endif %}
           </td>
           <td class="text-center align-middle">
-            {% if choices.delete %}
+            {% if choices.delete and choices.delete.value %}
               <div class="form-check d-flex justify-content-center">
                 <input 
                   type="checkbox" 
@@ -54,10 +58,12 @@
                   class="form-check-input"
                 >
               </div>
+            {% else %}
+              <span class="text-muted">-</span>
             {% endif %}
           </td>
           <td class="text-center align-middle">
-            {% if choices.view %}
+            {% if choices.view and choices.view.value %}
               <div class="form-check d-flex justify-content-center">
                 <input 
                   type="checkbox" 
@@ -68,9 +74,13 @@
                   class="form-check-input"
                 >
               </div>
+            {% else %}
+              <span class="text-muted">-</span>
             {% endif %}
           </td>
         </tr>
+      {% empty %}
+        <tr><td colspan="5" class="text-center text-muted">Нет данных для отображения</td></tr>
       {% endfor %}
     </tbody>
   </table>

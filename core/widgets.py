@@ -16,14 +16,16 @@ class CheckboxSelectMultiplePermissions(forms.CheckboxSelectMultiple):
         grouped_choices = {}
         current_value = [str(v) for v in (value or [])]
         
-        # optgroups - это список кортежей (group_name, options, group_index)
-        for group_name, options, group_index in context['widget']['optgroups']:
-            for option in options:
-                label = option['label']
-                val = option['value']
-                selected = option['selected']
+        # Получаем все выборы напрямую из widget.choices
+        # choices может быть списком кортежей (value, label) или QuerySet
+        choices = self.choices
+        if hasattr(choices, '__iter__') and not isinstance(choices, str):
+            for choice_value, choice_label in choices:
+                val = str(choice_value)
+                label = str(choice_label)
+                selected = val in current_value
                 
-                parts = str(label).split(' | ')
+                parts = label.split(' | ')
                 if len(parts) >= 2:
                     app_name = parts[0]
                     model_name = parts[1]
