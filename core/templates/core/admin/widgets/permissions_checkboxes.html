@@ -12,7 +12,7 @@
     </thead>
     <tbody>
       {% for group_name, choices in widget.grouped_choices.items %}
-        <tr>
+        <tr class="permission-row" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ choices.description }}">
           <td class="align-middle fw-bold">{{ group_name|safe }}</td>
           <td class="text-center align-middle">
             {% if choices.add %}
@@ -92,5 +92,22 @@
 }
 .permissions-checkboxes tbody tr:hover {
   background-color: #f8f9fa;
+  cursor: pointer;
+}
+.permission-row {
+  position: relative;
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Инициализация Bootstrap тултипов
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl, {
+      trigger: 'hover',
+      placement: 'top'
+    });
+  });
+});
+</script>
