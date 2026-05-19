@@ -891,16 +891,15 @@ def vk_auth(request):
 def admin_dashboard(request):
     """Панель управления администратора"""
     # Проверка прав доступа
-    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+    if not request.user.is_authenticated:
         return redirect('login')
     
-    client = request.user.client_profile
-    if not (client.is_moderator or client.is_admin or request.user.is_superuser):
+    # Проверяем права через роль пользователя или is_staff/is_superuser
+    if not (request.user.role in ['moderator', 'admin'] or request.user.is_staff or request.user.is_superuser):
         return redirect('calendar_view')
     
     # Статистика
     total_clients = User.objects.filter(
-        client_profile__isnull=False,
         is_active=True
     ).count()
     

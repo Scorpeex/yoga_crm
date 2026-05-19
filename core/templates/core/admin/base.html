@@ -162,31 +162,31 @@
             <h3>Управление</h3>
             <ul class="sidebar-menu">
                 <li>
-                    <a href="{% url 'admin_users' %}" class="{% if request.resolver_match.url_name == 'admin_users' %}active{% endif %}">
+                    <a href="/admin/core/user/">
                         <span class="menu-icon">👥</span>
                         <span>Пользователи</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'admin_classes' %}" class="{% if request.resolver_match.url_name == 'admin_classes' %}active{% endif %}">
+                    <a href="/admin/core/classsession/">
                         <span class="menu-icon">🧘</span>
                         <span>Занятия</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'admin_tariffs' %}" class="{% if request.resolver_match.url_name == 'admin_tariffs' %}active{% endif %}">
+                    <a href="/admin/core/tariff/">
                         <span class="menu-icon">💰</span>
                         <span>Тарифы</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'admin_subscriptions' %}" class="{% if request.resolver_match.url_name == 'admin_subscriptions' %}active{% endif %}">
+                    <a href="/admin/core/subscription/">
                         <span class="menu-icon">🎫</span>
                         <span>Абонементы</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'admin_bookings' %}" class="{% if request.resolver_match.url_name == 'admin_bookings' %}active{% endif %}">
+                    <a href="/admin/core/booking/">
                         <span class="menu-icon">📝</span>
                         <span>Записи</span>
                     </a>
@@ -198,13 +198,13 @@
             <h3>Финансы</h3>
             <ul class="sidebar-menu">
                 <li>
-                    <a href="{% url 'admin_payments' %}" class="{% if request.resolver_match.url_name == 'admin_payments' %}active{% endif %}">
+                    <a href="/admin/core/payment/">
                         <span class="menu-icon">💳</span>
                         <span>Платежи</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'admin_transactions' %}" class="{% if request.resolver_match.url_name == 'admin_transactions' %}active{% endif %}">
+                    <a href="/admin/core/paymenttransaction/">
                         <span class="menu-icon">💸</span>
                         <span>Транзакции</span>
                     </a>
@@ -216,13 +216,13 @@
             <h3>Настройки</h3>
             <ul class="sidebar-menu">
                 <li>
-                    <a href="{% url 'admin_halls' %}" class="{% if request.resolver_match.url_name == 'admin_halls' %}active{% endif %}">
+                    <a href="/admin/core/hall/">
                         <span class="menu-icon">🏢</span>
                         <span>Залы</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'admin_class_types' %}" class="{% if request.resolver_match.url_name == 'admin_class_types' %}active{% endif %}">
+                    <a href="/admin/core/classtype/">
                         <span class="menu-icon">📋</span>
                         <span>Типы занятий</span>
                     </a>
