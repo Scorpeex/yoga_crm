@@ -41,27 +41,27 @@ class CheckboxSelectMultiplePermissions(forms.CheckboxSelectMultiple):
                         'view': None,
                     }
                 
-                # Определяем тип действия по метке
+                # Определяем тип действия по метке (формат Django: "Can add ...", "Can change ...", etc.)
                 action_lower = action_label.lower()
-                if action_lower.startswith('add') or action_lower.startswith('добавить'):
+                if 'add' in action_lower or action_lower.startswith('добавить'):
                     grouped_choices[group_key]['add'] = {
                         'value': val,
                         'selected': selected,
                         'id': f"id_{name}_{val}"
                     }
-                elif action_lower.startswith('change') or action_lower.startswith('изменить') or action_lower.startswith('менять'):
+                elif 'change' in action_lower or 'изменить' in action_lower or 'менять' in action_lower:
                     grouped_choices[group_key]['change'] = {
                         'value': val,
                         'selected': selected,
                         'id': f"id_{name}_{val}"
                     }
-                elif action_lower.startswith('delete') or action_lower.startswith('удалить'):
+                elif 'delete' in action_lower or 'удалить' in action_lower:
                     grouped_choices[group_key]['delete'] = {
                         'value': val,
                         'selected': selected,
                         'id': f"id_{name}_{val}"
                     }
-                elif action_lower.startswith('view') or action_lower.startswith('просмотр'):
+                elif 'view' in action_lower or 'просмотр' in action_lower:
                     grouped_choices[group_key]['view'] = {
                         'value': val,
                         'selected': selected,
