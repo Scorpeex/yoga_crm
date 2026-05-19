@@ -42,4 +42,7 @@ urlpatterns = [
     path('api/auth/telegram/', views.telegram_auth, name='telegram_auth'),
     # VK авторизация
     path('api/auth/vk/', views.vk_auth, name='vk_auth'),
+    
+    # Кастомная админ-панель
+    path('admin-panel/', views.admin_dashboard, name='admin_dashboard'),
 ]

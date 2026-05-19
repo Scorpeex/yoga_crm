@@ -9,11 +9,12 @@
         </ul>
     </div>
     
-    {% if user.is_staff %}
+    {% if user.is_staff or user.is_superuser %}
     <div class="sidebar-section">
         <h3>⚙️ Администрирование</h3>
         <ul>
-            <li><a href="/admin/">🏠 Главная админа</a></li>
+            <li><a href="/admin-panel/">📊 Панель управления</a></li>
+            <li><a href="/admin/">🏠 Django админка</a></li>
             <li><a href="/admin/core/userdefaultsettings/">⚙️ Настройки новых пользователей</a></li>
             <li><a href="/admin/auth/group/">🔑 Группы прав</a></li>
             <li><a href="/admin/core/user/">👥 Пользователи</a></li>

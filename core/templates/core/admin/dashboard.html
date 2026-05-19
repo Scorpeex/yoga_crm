@@ -1,0 +1,330 @@
+{% extends 'core/admin/base.html' %}
+
+{% block title %}Панель управления - Йога Студия{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <h1 class="page-title">📊 Панель управления</h1>
+    
+    <!-- Карточки статистики -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+                <h3>{{ total_clients }}</h3>
+                <p>Всего клиентов</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-info">
+                <h3>{{ today_classes }}</h3>
+                <p>Занятий сегодня</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+                <h3>{{ active_subscriptions }}</h3>
+                <p>Активных абонементов</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-info">
+                <h3>{{ revenue_today }} ₽</h3>
+                <p>Выручка сегодня</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Быстрые действия -->
+    <div class="quick-actions">
+        <h2>⚡ Быстрые действия</h2>
+        <div class="actions-grid">
+            <a href="{% url 'admin_users' %}" class="action-btn">
+                <span class="btn-icon">👥</span>
+                <span>Управление пользователями</span>
+            </a>
+            <a href="{% url 'admin_classes' %}" class="action-btn">
+                <span class="btn-icon">📅</span>
+                <span>Расписание занятий</span>
+            </a>
+            <a href="{% url 'admin_tariffs' %}" class="action-btn">
+                <span class="btn-icon">💰</span>
+                <span>Тарифы</span>
+            </a>
+            <a href="{% url 'admin_subscriptions' %}" class="action-btn">
+                <span class="btn-icon">🎫</span>
+                <span>Абонементы</span>
+            </a>
+            <a href="{% url 'admin_payments' %}" class="action-btn">
+                <span class="btn-icon">💳</span>
+                <span>Финансы</span>
+            </a>
+            <a href="{% url 'admin_halls' %}" class="action-btn">
+                <span class="btn-icon">🏢</span>
+                <span>Залы</span>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Последние записи -->
+    <div class="recent-section">
+        <h2>📝 Последние записи на занятия</h2>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Клиент</th>
+                        <th>Занятие</th>
+                        <th>Дата и время</th>
+                        <th>Статус</th>
+                        <th>Оплата</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in recent_bookings %}
+                    <tr>
+                        <td>{{ booking.client.user.get_full_name|default:booking.client.user.username }}</td>
+                        <td>{{ booking.session.class_type.name }}</td>
+                        <td>{{ booking.session.date_time|date:"d.m.Y H:i" }}</td>
+                        <td>
+                            <span class="status-badge status-{{ booking.status }}">
+                                {{ booking.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if booking.is_subscription_used %}
+                                <span class="payment-badge subscription">Абонемент</span>
+                            {% elif booking.status == 'paid' %}
+                                <span class="payment-badge paid">Оплачено</span>
+                            {% else %}
+                                <span class="payment-badge pending">Ожидает</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="empty-message">Нет записей</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-dashboard {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-title {
+    font-size: 28px;
+    color: #2c3e50;
+    margin-bottom: 30px;
+    font-weight: 600;
+}
+
+/* Статистика */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.stat-icon {
+    font-size: 42px;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+}
+
+.stat-info h3 {
+    font-size: 32px;
+    color: #2c3e50;
+    margin: 0 0 5px 0;
+    font-weight: 700;
+}
+
+.stat-info p {
+    color: #7f8c8d;
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Быстрые действия */
+.quick-actions {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.quick-actions h2 {
+    font-size: 20px;
+    color: #2c3e50;
+    margin: 0 0 20px 0;
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+    border-radius: 10px;
+    text-decoration: none;
+    color: #2c3e50;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.action-btn:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-icon {
+    font-size: 24px;
+}
+
+/* Таблицы */
+.recent-section {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.recent-section h2 {
+    font-size: 20px;
+    color: #2c3e50;
+    margin: 0 0 20px 0;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table thead th {
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #7f8c8d;
+    font-size: 13px;
+    text-transform: uppercase;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.data-table tbody td {
+    padding: 15px;
+    border-bottom: 1px solid #f5f6fa;
+    color: #2c3e50;
+}
+
+.data-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.empty-message {
+    text-align: center;
+    color: #95a5a6;
+    padding: 30px !important;
+}
+
+/* Бейджи статусов */
+.status-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.status-confirmed {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status-pending {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.status-paid {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-cancelled {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.payment-badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.payment-badge.paid {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.payment-badge.pending {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+.payment-badge.subscription {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+</style>
+{% endblock %}

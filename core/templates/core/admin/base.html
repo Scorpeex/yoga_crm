@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Админ-панель - Йога Студия{% endblock %}</title>
+    {% load static %}
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f6fa;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Боковое меню */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 20px 0;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .sidebar-menu .menu-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-section {
+            padding: 15px 20px;
+        }
+
+        .sidebar-section h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        /* Основной контент */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 30px;
+        }
+
+        .top-bar {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <!-- Боковое меню -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2>🧘‍♀️ Йога Студия</h2>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li>
+                <a href="{% url 'admin_dashboard' %}" class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                    <span class="menu-icon">📊</span>
+                    <span>Панель управления</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'calendar_view' %}">
+                    <span class="menu-icon">📅</span>
+                    <span>Календарь занятий</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-section">
+            <h3>Управление</h3>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="{% url 'admin_users' %}" class="{% if request.resolver_match.url_name == 'admin_users' %}active{% endif %}">
+                        <span class="menu-icon">👥</span>
+                        <span>Пользователи</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_classes' %}" class="{% if request.resolver_match.url_name == 'admin_classes' %}active{% endif %}">
+                        <span class="menu-icon">🧘</span>
+                        <span>Занятия</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_tariffs' %}" class="{% if request.resolver_match.url_name == 'admin_tariffs' %}active{% endif %}">
+                        <span class="menu-icon">💰</span>
+                        <span>Тарифы</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_subscriptions' %}" class="{% if request.resolver_match.url_name == 'admin_subscriptions' %}active{% endif %}">
+                        <span class="menu-icon">🎫</span>
+                        <span>Абонементы</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_bookings' %}" class="{% if request.resolver_match.url_name == 'admin_bookings' %}active{% endif %}">
+                        <span class="menu-icon">📝</span>
+                        <span>Записи</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Финансы</h3>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="{% url 'admin_payments' %}" class="{% if request.resolver_match.url_name == 'admin_payments' %}active{% endif %}">
+                        <span class="menu-icon">💳</span>
+                        <span>Платежи</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_transactions' %}" class="{% if request.resolver_match.url_name == 'admin_transactions' %}active{% endif %}">
+                        <span class="menu-icon">💸</span>
+                        <span>Транзакции</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Настройки</h3>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="{% url 'admin_halls' %}" class="{% if request.resolver_match.url_name == 'admin_halls' %}active{% endif %}">
+                        <span class="menu-icon">🏢</span>
+                        <span>Залы</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_class_types' %}" class="{% if request.resolver_match.url_name == 'admin_class_types' %}active{% endif %}">
+                        <span class="menu-icon">📋</span>
+                        <span>Типы занятий</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sidebar-section">
+            <h3>Аккаунт</h3>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="/">
+                        <span class="menu-icon">🏠</span>
+                        <span>На сайт</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'logout' %}">
+                        <span class="menu-icon">🚪</span>
+                        <span>Выйти</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="user-info">
+                <div class="user-avatar">
+                    {{ user.first_name|default:user.username|slice:":1"|upper }}
+                </div>
+                <div>
+                    <strong>{{ user.get_full_name|default:user.username }}</strong>
+                    <div style="font-size: 12px; color: #7f8c8d;">
+                        {% if user.is_superuser %}Суперадмин{% elif user.is_staff %}Администратор{% else %}Модератор{% endif %}
+                    </div>
+                </div>
+            </div>
+            <a href="{% url 'logout' %}" class="logout-btn">Выйти</a>
+        </div>
+
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

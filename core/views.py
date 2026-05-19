@@ -10,11 +10,11 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 import pytz
 from django.conf import settings
-from .models import ClassSession, Hall, ClassType, User, Attendance, UserDefaultSettings
+from .models import ClassSession, Hall, ClassType, User, Attendance, UserDefaultSettings, Booking, Subscription, PaymentTransaction, Tariff
 from .forms import RegistrationForm, LoginForm
 from .telegram_auth import validate_telegram_auth_data
 from .vk_auth import validate_vk_auth_data
-from django.db.models import Q
+from django.db.models import Q, Sum
 
 
 def parse_datetime_to_local(start_str):
@@ -885,5 +885,55 @@ def vk_auth(request):
             'success': False,
             'error': f'Ошибка при авторизации: {str(e)}'
         }, status=500)
+
+
+@login_required
+def admin_dashboard(request):
+    """Панель управления администратора"""
+    # Проверка прав доступа
+    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+        return redirect('login')
+    
+    client = request.user.client_profile
+    if not (client.is_moderator or client.is_admin or request.user.is_superuser):
+        return redirect('calendar_view')
+    
+    # Статистика
+    total_clients = User.objects.filter(
+        client_profile__isnull=False,
+        is_active=True
+    ).count()
+    
+    today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = timezone.now().replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    today_classes = ClassSession.objects.filter(
+        date_time__gte=today_start,
+        date_time__lte=today_end
+    ).count()
+    
+    active_subscriptions = Subscription.objects.filter(
+        status='active'
+    ).count()
+    
+    # Выручка за сегодня
+    revenue_today = PaymentTransaction.objects.filter(
+        transaction_type='deposit',
+        created_at__gte=today_start,
+        created_at__lte=today_end
+    ).aggregate(total=Sum('amount'))['total'] or 0
+    
+    # Последние записи
+    recent_bookings = Booking.objects.select_related(
+        'client__user', 'session__class_type'
+    ).order_by('-created_at')[:10]
+    
+    return render(request, 'core/admin/dashboard.html', {
+        'total_clients': total_clients,
+        'today_classes': today_classes,
+        'active_subscriptions': active_subscriptions,
+        'revenue_today': revenue_today,
+        'recent_bookings': recent_bookings,
+    })
 
 
