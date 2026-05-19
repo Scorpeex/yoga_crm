@@ -8,6 +8,41 @@ class CheckboxSelectMultiplePermissions(forms.CheckboxSelectMultiple):
     Колонки: Название прав, Add, Change, Delete, View.
     """
     template_name = 'core/admin/widgets/permissions_checkboxes.html'
+    
+    # Подробные описания для каждой группы прав
+    # Ключи должны соответствовать формату: "app_label | model_name" (в нижнем регистре)
+    PERMISSION_DESCRIPTIONS = {
+        # Auth app - разные варианты написания
+        'auth | log entry': 'Логи всех действий в админке (кто, когда и что изменил). Доступ только для администраторов для аудита.',
+        'администрирование | запись в журнале': 'Логи всех действий в админке (кто, когда и что изменил). Доступ только для администраторов для аудита.',
+        
+        'auth | group': 'Модель групп пользователей. Права нужны для создания и изменения групп. Только для администраторов.',
+        'пользователи и группы | группа': 'Модель групп пользователей. Права нужны для создания и изменения групп. Только для администраторов.',
+        
+        'auth | permission': 'Сами разрешения (галочки в настройках). Права даются только разработчикам или суперпользователям.',
+        'пользователи и группы | право': 'Сами разрешения (галочки в настройках). Права даются только разработчикам или суперпользователям.',
+        
+        'contenttypes | content type': 'Служебная модель, используемая внутри Django. Не требует предоставления прав обычным пользователям.',
+        'типы содержимого | тип содержимого': 'Служебная модель, используемая внутри Django. Не требует предоставления прав обычным пользователям.',
+        
+        # Core app
+        'core | посещение': 'Факт прихода клиента на занятие. Права позволяют отмечать приход, просматривать историю и исправлять ошибки.',
+        'core | запись на занятие': 'Заявка клиента на будущее занятие. Ключевое право для учеников - позволяет записываться на занятия.',
+        'core | занятие': 'Расписание уроков. Права позволяют смотреть, создавать, менять и отменять занятия.',
+        'core | тип занятия': 'Справочник видов активности (йога, кроссфит и т.д.). Права нужны для просмотра и добавления новых направлений.',
+        'core | зал': 'Справочник помещений. Права аналогичны типу занятия - просмотр и управление залами.',
+        'core | оплата': 'Информация о платежах клиентов. Права позволяют принимать деньги, смотреть историю и корректировать платежи.',
+        'core | финансовая операция': 'Более детальные бухгалтерские записи. Доступ ограничен бухгалтерией и владельцем.',
+        'core | оплата аренды': 'Платежи арендаторов, если сдаете залы. Права только для менеджеров по аренде.',
+        'core | абонемент': 'Сущности абонементов. Права позволяют просматривать и создавать новые абонементы.',
+        'core | тариф': 'Настройки цен и правил. Управление тарифами - задача администратора.',
+        'core | клиент': 'Карточки клиентов. Права позволяют смотреть, создавать, редактировать и удалять клиентов.',
+        'core | настройки новых пользователей': 'Кастомная модель для настройки параметров при регистрации. Права только администраторам.',
+        
+        # Sessions app
+        'sessions | session': 'Техническая информация о сессиях пользователей. Права не даются обычным пользователям.',
+        'сессии | сессия': 'Техническая информация о сессиях пользователей. Права не даются обычным пользователям.',
+    }
 
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
@@ -34,34 +69,37 @@ class CheckboxSelectMultiplePermissions(forms.CheckboxSelectMultiple):
                     action_label = label
 
                 if group_key not in grouped_choices:
+                    # Получаем описание из словаря или используем значение по умолчанию
+                    description = self.PERMISSION_DESCRIPTIONS.get(group_key.lower(), 'Описание недоступно')
                     grouped_choices[group_key] = {
                         'add': None,
                         'change': None,
                         'delete': None,
                         'view': None,
+                        'description': description,
                     }
                 
-                # Определяем тип действия по метке
+                # Определяем тип действия по метке (формат Django: "Can add ...", "Can change ...", etc.)
                 action_lower = action_label.lower()
-                if action_lower.startswith('add') or action_lower.startswith('добавить'):
+                if 'add' in action_lower or action_lower.startswith('добавить'):
                     grouped_choices[group_key]['add'] = {
                         'value': val,
                         'selected': selected,
                         'id': f"id_{name}_{val}"
                     }
-                elif action_lower.startswith('change') or action_lower.startswith('изменить') or action_lower.startswith('менять'):
+                elif 'change' in action_lower or 'изменить' in action_lower or 'менять' in action_lower:
                     grouped_choices[group_key]['change'] = {
                         'value': val,
                         'selected': selected,
                         'id': f"id_{name}_{val}"
                     }
-                elif action_lower.startswith('delete') or action_lower.startswith('удалить'):
+                elif 'delete' in action_lower or 'удалить' in action_lower:
                     grouped_choices[group_key]['delete'] = {
                         'value': val,
                         'selected': selected,
                         'id': f"id_{name}_{val}"
                     }
-                elif action_lower.startswith('view') or action_lower.startswith('просмотр'):
+                elif 'view' in action_lower or 'просмотр' in action_lower:
                     grouped_choices[group_key]['view'] = {
                         'value': val,
                         'selected': selected,
