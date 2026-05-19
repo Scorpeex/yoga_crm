@@ -1,18 +1,17 @@
 ```
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
 # Compiled and build artifacts
+*.pyc
+__pycache__/
 *.o
 *.obj
-*.out
-*.so
-*.dll
-*.a
+dist/
+build/
 *.class
+*.so
+*.a
+*.dll
+*.exe
+*.out
 
 # Dependencies
 .venv/
@@ -20,8 +19,6 @@ venv/
 node_modules/
 .mypy_cache/
 .pytest_cache/
-dist/
-build/
 target/
 .gradle/
 
@@ -40,7 +37,7 @@ target/
 .vscode/
 .idea/
 
-# System
+# System files
 .DS_Store
 Thumbs.db
 
