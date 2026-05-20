@@ -3,7 +3,37 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import Tariff, ClassType, User, Hall, ClassSession, Booking, PaymentTransaction, Attendance, Payment, RentPayment, Subscription
+from .models import Tariff, ClassType, User, Hall, ClassSession, Booking, PaymentTransaction, Attendance, Payment, RentPayment, Subscription, UserDefaultSettings
+from .widgets import CheckboxSelectMultiplePermissions
+
+
+class UserDefaultSettingsAdmin(admin.ModelAdmin):
+    """Админка для настроек новых пользователей"""
+    list_display = ['__str__', 'default_role', 'default_balance']
+    filter_horizontal = ['default_tariffs', 'default_groups']
+    
+    fieldsets = (
+        ('Тарифы по умолчанию', {
+            'fields': ('default_tariffs',),
+            'description': 'Выберите тарифы, которые будут автоматически назначаться новым пользователям при регистрации'
+        }),
+        ('Группы прав доступа по умолчанию', {
+            'fields': ('default_groups',),
+            'description': 'Выберите группы Django, которые будут автоматически назначаться новым пользователям'
+        }),
+        ('Роль и баланс по умолчанию', {
+            'fields': ('default_role', 'default_balance'),
+            'description': 'Роль пользователя и начальный баланс для новых пользователей'
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        # Разрешаем создание только одного объекта
+        return not UserDefaultSettings.objects.exists()
+    
+    def has_delete_permission(self, request, obj=None):
+        # Запрещаем удаление, чтобы всегда были настройки по умолчанию
+        return False
 
 
 class TariffAdmin(admin.ModelAdmin):
@@ -38,7 +68,10 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ['is_staff', 'is_superuser', 'is_active', 'role']
     search_fields = ['username', 'first_name', 'last_name', 'email', 'phone']
     ordering = ['last_name', 'first_name']
-    filter_horizontal = ['allowed_tariffs']
+    filter_horizontal = ['allowed_tariffs', 'groups']
+    
+    # Используем кастомный виджет для прав
+    formfield_overrides = {}
     
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
@@ -56,6 +89,35 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('username', 'password1', 'password2', 'email', 'first_name', 'last_name', 'phone', 'role'),
         }),
     )
+    
+    def get_form(self, request, obj=None, **kwargs):
+        """Переопределяем форму для использования кастомного виджета прав"""
+        from django.contrib.auth.models import Permission
+        from django import forms
+        
+        form = super().get_form(request, obj, **kwargs)
+        
+        # Заменяем виджет для user_permissions
+        if 'user_permissions' in form.base_fields:
+            permissions_queryset = Permission.objects.all().select_related('content_type')
+            form.base_fields['user_permissions'].widget = CheckboxSelectMultiplePermissions(
+                choices=[(p.id, f"{p.content_type.app_label} | {p.content_type.model} | {p.name}") for p in permissions_queryset]
+            )
+        
+        return form
+    
+    def save_model(self, request, obj, form, change):
+        """Сохраняем пользователя и синхронизируем права из групп"""
+        super().save_model(request, obj, form, change)
+        
+        # Синхронизируем права: добавляем все права из выбранных групп
+        all_group_permissions = set()
+        for group in obj.groups.all():
+            all_group_permissions.update(group.permissions.all())
+        
+        # Добавляем права из групп к индивидуальным правам пользователя
+        if all_group_permissions:
+            obj.user_permissions.add(*all_group_permissions)
 
 
 class HallAdmin(admin.ModelAdmin):
@@ -160,6 +222,25 @@ class RentPaymentAdmin(admin.ModelAdmin):
 # Снимаем стандартную регистрацию Group
 admin.site.unregister(Group)
 
+class GroupAdmin(admin.ModelAdmin):
+    list_display = ['name']
+    
+    def get_form(self, request, obj=None, **kwargs):
+        """Переопределяем форму для использования кастомного виджета прав"""
+        from django.contrib.auth.models import Permission
+        from django import forms
+        
+        form = super().get_form(request, obj, **kwargs)
+        
+        # Заменяем виджет для permissions
+        if 'permissions' in form.base_fields:
+            permissions_queryset = Permission.objects.all().select_related('content_type')
+            form.base_fields['permissions'].widget = CheckboxSelectMultiplePermissions(
+                choices=[(p.id, f"{p.content_type.app_label} | {p.content_type.model} | {p.name}") for p in permissions_queryset]
+            )
+        
+        return form
+
 # Регистрируем все модели в стандартном сайте админа
 admin.site.register(Tariff, TariffAdmin)
 admin.site.register(ClassType, ClassTypeAdmin)
@@ -172,4 +253,5 @@ admin.site.register(Subscription, SubscriptionAdmin)
 admin.site.register(Attendance, AttendanceAdmin)
 admin.site.register(Payment, PaymentAdmin)
 admin.site.register(RentPayment, RentPaymentAdmin)
-admin.site.register(Group)
+admin.site.register(UserDefaultSettings, UserDefaultSettingsAdmin)
+admin.site.register(Group, GroupAdmin)

@@ -1,0 +1,113 @@
+{% with id=widget.attrs.id %}
+<div class="permissions-checkboxes">
+  <table class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th style="width: 40%;">Права доступа</th>
+        <th class="text-center" style="width: 15%;">Add</th>
+        <th class="text-center" style="width: 15%;">Change</th>
+        <th class="text-center" style="width: 15%;">Delete</th>
+        <th class="text-center" style="width: 15%;">View</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for group_name, choices in widget.grouped_choices.items %}
+        <tr class="permission-row" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ choices.description }}">
+          <td class="align-middle fw-bold">{{ group_name|safe }}</td>
+          <td class="text-center align-middle">
+            {% if choices.add %}
+              <div class="form-check d-flex justify-content-center">
+                <input 
+                  type="checkbox" 
+                  name="{{ widget.name }}" 
+                  value="{{ choices.add.value }}" 
+                  id="{{ choices.add.id }}"
+                  {% if choices.add.selected %}checked{% endif %}
+                  class="form-check-input"
+                >
+              </div>
+            {% endif %}
+          </td>
+          <td class="text-center align-middle">
+            {% if choices.change %}
+              <div class="form-check d-flex justify-content-center">
+                <input 
+                  type="checkbox" 
+                  name="{{ widget.name }}" 
+                  value="{{ choices.change.value }}" 
+                  id="{{ choices.change.id }}"
+                  {% if choices.change.selected %}checked{% endif %}
+                  class="form-check-input"
+                >
+              </div>
+            {% endif %}
+          </td>
+          <td class="text-center align-middle">
+            {% if choices.delete %}
+              <div class="form-check d-flex justify-content-center">
+                <input 
+                  type="checkbox" 
+                  name="{{ widget.name }}" 
+                  value="{{ choices.delete.value }}" 
+                  id="{{ choices.delete.id }}"
+                  {% if choices.delete.selected %}checked{% endif %}
+                  class="form-check-input"
+                >
+              </div>
+            {% endif %}
+          </td>
+          <td class="text-center align-middle">
+            {% if choices.view %}
+              <div class="form-check d-flex justify-content-center">
+                <input 
+                  type="checkbox" 
+                  name="{{ widget.name }}" 
+                  value="{{ choices.view.value }}" 
+                  id="{{ choices.view.id }}"
+                  {% if choices.view.selected %}checked{% endif %}
+                  class="form-check-input"
+                >
+              </div>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endwith %}
+
+<style>
+.permissions-checkboxes .table {
+  margin-bottom: 0;
+}
+.permissions-checkboxes .table thead th {
+  font-weight: 600;
+  color: #495057;
+  vertical-align: middle;
+}
+.permissions-checkboxes .form-check-input:checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+.permissions-checkboxes tbody tr:hover {
+  background-color: #161616 !important;
+  cursor: pointer;
+}
+.permission-row {
+  position: relative;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Инициализация Bootstrap тултипов
+  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl, {
+      trigger: 'hover',
+      placement: 'top'
+    });
+  });
+});
+</script>
