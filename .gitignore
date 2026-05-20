@@ -9,7 +9,7 @@
 *.a
 *.obj
 *.out
-
+*.sqlite3
 # Dependencies
 node_modules/
 venv/
