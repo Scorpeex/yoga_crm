@@ -13,7 +13,7 @@ from django.conf import settings
 from .models import ClassSession, Hall, ClassType, User, Attendance, UserDefaultSettings
 from .forms import RegistrationForm, LoginForm
 from .telegram_auth import validate_telegram_auth_data
-from .vk_auth import validate_vk_auth_data
+from .vk_auth import validate_vk_oauth_data
 from django.db.models import Q
 
 
@@ -801,30 +801,56 @@ def telegram_auth(request):
 @require_http_methods(["POST"])
 def vk_auth(request):
     """
-    Обработчик авторизации через ВКонтакте
+    Обработчик авторизации через ВКонтакте (VK ID SDK 3.0+)
     
-    Получает данные от VK ID Widget, проверяет подпись,
+    Получает access_token от VK ID Widget, проверяет данные через VK API,
     находит или создаёт пользователя, выполняет вход.
     """
-    if not hasattr(settings, 'VK_CLIENT_SECRET') or not settings.VK_CLIENT_SECRET:
+    if not hasattr(settings, 'VK_SERVICE_KEY') or not settings.VK_SERVICE_KEY:
         return JsonResponse({
             'success': False,
             'error': 'VK авторизация не настроена. Обратитесь к администратору.'
         }, status=500)
     
-    # Получаем данные из POST запроса
-    vk_data = {}
-    for key in ['id', 'first_name', 'last_name', 'photo_url', 'auth_date', 'hash']:
-        if key in request.POST:
-            vk_data[key] = request.POST[key]
+    # Проверяем тип контента и получаем данные
+    if request.content_type == 'application/json':
+        import json
+        try:
+            data = json.loads(request.body)
+            access_token = data.get('access_token', '')
+            user_id = data.get('user_id')
+            email = data.get('email', '')
+            first_name = data.get('first_name', '')
+            last_name = data.get('last_name', '')
+            photo_url = data.get('photo_url', '')
+        except (json.JSONDecodeError, ValueError):
+            return JsonResponse({
+                'success': False,
+                'error': 'Неверный формат данных'
+            }, status=400)
+    else:
+        # Fallback для form-urlencoded (старая версия)
+        access_token = request.POST.get('access_token', '')
+        user_id = request.POST.get('user_id')
+        email = request.POST.get('email', '')
+        first_name = request.POST.get('first_name', '')
+        last_name = request.POST.get('last_name', '')
+        photo_url = request.POST.get('photo_url', '')
+    
+    # Проверяем наличие обязательных данных
+    if not access_token or not user_id:
+        return JsonResponse({
+            'success': False,
+            'error': 'Неверные данные авторизации. Попробуйте ещё раз.'
+        }, status=400)
     
     # Проверяем данные через модуль VK аутентификации
-    validated_data = validate_vk_auth_data(vk_data, settings.VK_CLIENT_SECRET)
+    validated_data = validate_vk_oauth_data(access_token, int(user_id), settings.VK_SERVICE_KEY)
     
     if not validated_data:
         return JsonResponse({
             'success': False,
-            'error': 'Неверные данные авторизации. Попробуйте ещё раз.'
+            'error': 'Не удалось получить данные пользователя. Попробуйте ещё раз.'
         }, status=400)
     
     vk_id = validated_data['vk_id']
@@ -837,6 +863,15 @@ def vk_auth(request):
             if user:
                 # Пользователь найден - просто выполняем вход
                 created = False
+                # Обновляем данные если они изменились
+                if first_name:
+                    user.first_name = first_name
+                if last_name:
+                    user.last_name = last_name
+                if photo_url:
+                    # Можно добавить поле для фото в модель
+                    pass
+                user.save()
             else:
                 # Пользователь не найден - создаём нового
                 # Генерируем уникальный username на основе vk_id
@@ -844,8 +879,8 @@ def vk_auth(request):
                 
                 user = User.objects.create_user(
                     username=username,
-                    first_name=validated_data['first_name'],
-                    last_name=validated_data['last_name'],
+                    first_name=first_name or validated_data['first_name'],
+                    last_name=last_name or validated_data['last_name'],
                     vk_id=vk_id,
                 )
                 

@@ -1,5 +1,6 @@
 Django>=4.2
 psycopg2-binary>=2.9
 icalendar>=6.0
+requests>=2.31
 pytz>=2026.2
 dotenv>=0.9

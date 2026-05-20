@@ -31,6 +31,9 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver']
 # Telegram Bot Token для авторизации
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 
+# VK Service Key для авторизации через VK ID (Сервисный ключ доступа)
+VK_SERVICE_KEY = os.environ.get('VK_SERVICE_KEY', '')
+
 # Timezone settings - Новосибирск +7 UTC
 TIME_ZONE = 'Asia/Novosibirsk'
 USE_TZ = False
