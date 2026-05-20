@@ -4,3 +4,4 @@ icalendar>=6.0
 requests>=2.31
 pytz>=2026.2
 dotenv>=0.9
+python-decouple>=3.8

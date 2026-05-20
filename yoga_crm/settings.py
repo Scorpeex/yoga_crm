@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,18 +22,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-ktxd24q3*ss47@)dp!&4_f!05+fvzqo2(t20m@fm(u^7hi#8ll')
+SECRET_KEY = config('DJANGO_SECRET_KEY', default='django-insecure-ktxd24q3*ss47@)dp!&4_f!05+fvzqo2(t20m@fm(u^7hi#8ll')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'testserver']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost,testserver').split(',')
 
 # Telegram Bot Token для авторизации
-TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+TELEGRAM_BOT_TOKEN = config('TELEGRAM_BOT_TOKEN', default='')
 
 # VK Service Key для авторизации через VK ID (Сервисный ключ доступа)
-VK_SERVICE_KEY = os.environ.get('VK_SERVICE_KEY', '')
+VK_SERVICE_KEY = config('VK_SERVICE_KEY', default='')
+
+# VK Client ID для авторизации через VK ID
+VK_CLIENT_ID = config('VK_CLIENT_ID', default='')
 
 # Timezone settings - Новосибирск +7 UTC
 TIME_ZONE = 'Asia/Novosibirsk'
