@@ -297,13 +297,23 @@ pip install -r requirements.txt
 ```
 
 ### 2. Настройка переменных окружения
-Создайте файл `.env` в корне проекта:
+Создайте файл `.env` в корне проекта на основе `.env.example`:
 ```bash
+# Django settings
+DJANGO_SECRET_KEY=your-secret-key-here
+DEBUG=True
+ALLOWED_HOSTS=127.0.0.1,localhost
+
 # Telegram Bot Token
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 TELEGRAM_BOT_USERNAME=your_bot_username
+
+# VK ID App Settings (получите в https://dev.vk.com/)
+VK_SERVICE_KEY=your_vk_service_key_here
+VK_CLIENT_ID=your_vk_app_id_here
 ```
-Используйте `.env.example` как шаблон.
+
+**Важно:** Файл `.env` не должен попадать в репозиторий! Для локальной разработки и продакшена создавайте разные версии этого файла с соответствующими настройками (`DEBUG=False`, правильные домены в `ALLOWED_HOSTS` и т.д.).
 
 ### 3. Применение миграций
 ```bash
@@ -326,14 +336,20 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-### 6. Настройка Telegram-авторизации
+### 7. Настройка Telegram-авторизации
 1. Создайте бота через @BotFather и получите токен
 2. Вставьте токен в файл `.env`
 3. Укажите username бота в шаблоне `login.html` (поле `data-telegram-login`)
 4. Для продакшена настройте домен через `/setdomain` в @BotFather
 5. Подробная инструкция в файле `TELEGRAM_AUTH_SETUP.md`
 
-### 7. Первый вход
+### 8. Настройка VK-авторизации
+1. Создайте приложение в [VK Developers](https://dev.vk.com/)
+2. Получите Service Key и Client ID, добавьте их в `.env`
+3. Укажите ID вашего приложения в файле `core/static/core/js/vk-auth.js` (поле `app`)
+4. Для продакшена настройте домен в настройках приложения VK
+
+### 9. Первый вход
 - Обычные пользователи (ученики): http://localhost:8000/login/
 - Администраторы и модераторы: http://localhost:8000/admin/login/
 
@@ -424,30 +440,11 @@ yoga_crm/
 - Криптографическая проверка данных Telegram (HMAC-SHA256)
 - Валидация актуальности данных авторизации (24 часа)
 - Изоляция данных пользователей по ролям
+- **Разделение конфигураций:** чувствительные настройки (SECRET_KEY, DEBUG, ALLOWED_HOSTS, ключи API) вынесены в `.env` файл, который не попадает в репозиторий
 
 ---
 
 ## 📝 Лицензия
 
 Проект разработан для внутреннего использования йога-студии.
-
-### Авторизация через ВКонтакте
-- **VK ID Widget:** виджет для быстрого входа через ВКонтакте
-- **Автоматическая регистрация:** при первом входе создаётся новый пользователь с привязкой к `vk_id`
-- **Безопасность:** криптографическая проверка подписи данных (HMAC-SHA256), валидация актуальности данных (24 часа)
-- **Настройка:** 
-  1. Создайте приложение в [VK Developers](https://dev.vk.com/)
-  2. Получите Client Secret и укажите в `.env` как `VK_CLIENT_SECRET`
-  3. Укажите ID приложения в файле `vk-auth.js` (поле `app`)
-
----
-
-### 8. Настройка VK-авторизации
-1. Создайте приложение в [VK Developers](https://dev.vk.com/)
-2. Получите Client Secret и добавьте в `.env`:
-   ```bash
-   VK_CLIENT_SECRET=your_vk_client_secret_here
-   ```
-3. Укажите ID вашего приложения в файле `core/static/core/js/vk-auth.js` (поле `app`)
-4. Для продакшена настройте домен в настройках приложения VK
 
