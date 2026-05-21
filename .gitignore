@@ -1,45 +1,38 @@
 ```
-# Environment variables
-.env
-
 # Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
-.venv/
-.ENV
-.env.bak
-.env.local
-.env.*
-.python-version
-.pytest_cache/
-.mypy_cache/
 
-# Django/Python web frameworks
+# Django
 *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-# IDE and editor files
+# Coverage
+.coverage
+htmlcov/
+.coverage.*
+.nox/
+
+# Environment
+.env
+.env.local
+.env.*
+.env~*
+.venv/
+venv/
+ENV/
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
-.DS_Store
-Thumbs.db
 
-# OS generated files
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 ```

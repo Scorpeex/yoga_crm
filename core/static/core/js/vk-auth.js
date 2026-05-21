@@ -6,16 +6,36 @@
 (function() {
     'use strict';
 
-    // Конфигурация VK ID
-    const VK_CONFIG = {
-        appId: 54601779, // ЗАМЕНИТЕ на ID вашего VK приложения
-        redirectUrl: window.location.origin + '/api/auth/vk/',
+    // Получаем конфигурацию из Django settings через data-атрибуты
+    const getVkConfig = function() {
+        const container = document.getElementById('vk-login-container');
+        if (!container) return null;
+        
+        const appId = container.getAttribute('data-vk-app-id');
+        const redirectUrl = container.getAttribute('data-vk-redirect-url') || window.location.origin + '/api/auth/vk/';
+        
+        if (!appId) {
+            console.error('VK App ID не настроен в Django settings');
+            return null;
+        }
+        
+        return {
+            appId: appId,
+            redirectUrl: redirectUrl
+        };
     };
 
     // Инициализация виджета VK ID
     const initVKWidget = function() {
         const container = document.getElementById('vk-login-container');
         if (!container) return;
+
+        // Получаем конфигурацию
+        const vkConfig = getVkConfig();
+        if (!vkConfig) {
+            createErrorButton(container, 'VK авторизация не настроена');
+            return;
+        }
 
         // Очищаем контейнер
         container.innerHTML = '';
@@ -28,7 +48,7 @@
         script.onload = function() {
             if (!('VKIDSDK' in window)) {
                 console.error('VK SDK не загрузился');
-                createFallbackButton(container);
+                createErrorButton(container, 'Не удалось загрузить VK SDK');
                 return;
             }
 
@@ -37,8 +57,8 @@
             try {
                 // Инициализируем конфиг
                 VKID.Config.init({
-                    app: VK_CONFIG.appId,
-                    redirectUrl: VK_CONFIG.redirectUrl,
+                    app: vkConfig.appId,
+                    redirectUrl: vkConfig.redirectUrl,
                     responseMode: VKID.ConfigResponseMode.Callback,
                     source: VKID.ConfigSource.LOWCODE,
                     scope: '', // Можно добавить нужные права доступа
@@ -67,13 +87,13 @@
 
             } catch (e) {
                 console.error('Ошибка инициализации VK ID:', e);
-                createFallbackButton(container);
+                createErrorButton(container, 'Ошибка инициализации VK ID');
             }
         };
 
         script.onerror = function() {
             console.error('Не удалось загрузить VK SDK');
-            createFallbackButton(container);
+            createErrorButton(container, 'Не удалось загрузить VK SDK');
         };
 
         container.appendChild(script);
@@ -119,14 +139,13 @@
         alert('Ошибка авторизации ВКонтакте. Попробуйте ещё раз.');
     };
 
-    // Fallback кнопка если SDK не загрузился
-    const createFallbackButton = function(container) {
+    // Кнопка с ошибкой если конфигурация не настроена или SDK не загрузился
+    const createErrorButton = function(container, errorMessage) {
         container.innerHTML = `
-            <a href="https://vk.com/id" target="_blank" 
-               style="display: inline-block; padding: 10px 20px; background: #0077FF; color: white; 
-                      text-decoration: none; border-radius: 8px; font-weight: 500;">
-                Войти через ВКонтакте
-            </a>
+            <div style="display: inline-block; padding: 10px 20px; background: #f44336; color: white; 
+                         border-radius: 8px; font-weight: 500; cursor: not-allowed;">
+                ${errorMessage}
+            </div>
         `;
     };
 

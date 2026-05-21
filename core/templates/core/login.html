@@ -58,7 +58,10 @@
                     <span>или войдите через</span>
                 </div>
                 <div id="telegram-login-container"></div>
-                <div id="vk-login-container" style="margin-top: 15px;"></div>
+                <div id="vk-login-container" 
+                     style="margin-top: 15px;"
+                     data-vk-app-id="{{ vk_client_id|default:'' }}"
+                     data-vk-redirect-url="{{ request.scheme }}://{{ request.get_host }}/api/auth/vk/"></div>
             </div>
             
             <div class="auth-links">

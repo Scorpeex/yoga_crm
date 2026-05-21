@@ -651,7 +651,11 @@ def login_view(request):
     else:
         form = LoginForm()
     
-    return render(request, 'core/login.html', {'form': form})
+    context = {
+        'form': form,
+        'vk_client_id': getattr(settings, 'VK_CLIENT_ID', ''),
+    }
+    return render(request, 'core/login.html', context)
 
 
 @login_required
