@@ -8,7 +8,7 @@
 
     // Конфигурация VK ID
     const VK_CONFIG = {
-        appId: 54601779, // ЗАМЕНИТЕ на ID вашего VK приложения
+        appId: window.VK_CLIENT_ID ? parseInt(window.VK_CLIENT_ID) : 0, // App ID из настроек Django
         redirectUrl: window.location.origin + '/api/auth/vk/',
     };
 
@@ -16,6 +16,13 @@
     const initVKWidget = function() {
         const container = document.getElementById('vk-login-container');
         if (!container) return;
+
+        // Проверяем, что appId настроен
+        if (!VK_CONFIG.appId || VK_CONFIG.appId === 0) {
+            console.error('VK_CLIENT_ID не настроен');
+            createFallbackButton(container, true);
+            return;
+        }
 
         // Очищаем контейнер
         container.innerHTML = '';
@@ -28,7 +35,7 @@
         script.onload = function() {
             if (!('VKIDSDK' in window)) {
                 console.error('VK SDK не загрузился');
-                createFallbackButton(container);
+                createFallbackButton(container, false);
                 return;
             }
 
@@ -67,13 +74,13 @@
 
             } catch (e) {
                 console.error('Ошибка инициализации VK ID:', e);
-                createFallbackButton(container);
+                createFallbackButton(container, false);
             }
         };
 
         script.onerror = function() {
             console.error('Не удалось загрузить VK SDK');
-            createFallbackButton(container);
+            createFallbackButton(container, false);
         };
 
         container.appendChild(script);
@@ -119,15 +126,24 @@
         alert('Ошибка авторизации ВКонтакте. Попробуйте ещё раз.');
     };
 
-    // Fallback кнопка если SDK не загрузился
-    const createFallbackButton = function(container) {
-        container.innerHTML = `
-            <a href="https://vk.com/id" target="_blank" 
-               style="display: inline-block; padding: 10px 20px; background: #0077FF; color: white; 
-                      text-decoration: none; border-radius: 8px; font-weight: 500;">
-                Войти через ВКонтакте
-            </a>
-        `;
+    // Fallback кнопка если SDK не загрузился или appId не настроен
+    const createFallbackButton = function(container, showConfigError) {
+        if (showConfigError) {
+            container.innerHTML = `
+                <div style="padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; color: #856404;">
+                    <strong>VK авторизация не настроена</strong><br>
+                    <small>Необходимо настроить VK_CLIENT_ID в .env файле</small>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <a href="https://vk.com/id" target="_blank" 
+                   style="display: inline-block; padding: 10px 20px; background: #0077FF; color: white; 
+                          text-decoration: none; border-radius: 8px; font-weight: 500;">
+                    Войти через ВКонтакте
+                </a>
+            `;
+        }
     };
 
     // Функция для получения CSRF токена

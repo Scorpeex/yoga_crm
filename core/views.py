@@ -651,7 +651,13 @@ def login_view(request):
     else:
         form = LoginForm()
     
-    return render(request, 'core/login.html', {'form': form})
+    # Передаём VK_CLIENT_ID в контекст для виджета авторизации
+    context = {
+        'form': form,
+        'VK_CLIENT_ID': getattr(settings, 'VK_CLIENT_ID', ''),
+    }
+    
+    return render(request, 'core/login.html', context)
 
 
 @login_required
