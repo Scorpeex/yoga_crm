@@ -78,7 +78,10 @@ class UserAdmin(BaseUserAdmin):
         ('Персональная информация', {'fields': ('first_name', 'last_name', 'email', 'phone', 'role')}),
         ('Финансы', {'fields': ('balance',)}),
         ('Доступные тарифы', {'fields': ('allowed_tariffs',)}),
-        ('Права доступа', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Права доступа', {
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups'),
+            'description': 'Группа прав доступа устанавливается автоматически на основе поля "Роль". Для изменения прав отредактируйте соответствующую группу в разделе "Группы".'
+        }),
         ('Даты', {'fields': ('created_at', 'last_login')}),
     )
     
@@ -107,17 +110,38 @@ class UserAdmin(BaseUserAdmin):
         return form
     
     def save_model(self, request, obj, form, change):
-        """Сохраняем пользователя и синхронизируем права из групп"""
+        """Сохраняем пользователя и синхронизируем роль с группой Django"""
         super().save_model(request, obj, form, change)
         
-        # Синхронизируем права: добавляем все права из выбранных групп
-        all_group_permissions = set()
-        for group in obj.groups.all():
-            all_group_permissions.update(group.permissions.all())
+        # Синхронизация роли с группами Django
+        # Каждая роль соответствует определенной группе
+        role_to_group = {
+            'student': 'Student',
+            'moderator': 'Moderator',
+            'admin': 'Admin',
+        }
         
-        # Добавляем права из групп к индивидуальным правам пользователя
-        if all_group_permissions:
-            obj.user_permissions.add(*all_group_permissions)
+        # Получаем целевую группу на основе роли
+        target_group_name = role_to_group.get(obj.role, 'Student')
+        
+        try:
+            target_group = Group.objects.get(name=target_group_name)
+            
+            # Удаляем все группы, кроме целевой
+            for group in obj.groups.all():
+                if group != target_group:
+                    obj.groups.remove(group)
+            
+            # Добавляем целевую группу, если её нет
+            if target_group not in obj.groups.all():
+                obj.groups.add(target_group)
+                
+                # Автоматически добавляем права из группы
+                obj.user_permissions.add(*target_group.permissions.all())
+        except Group.DoesNotExist:
+            # Если группа не существует, создаем её
+            target_group = Group.objects.create(name=target_group_name)
+            obj.groups.add(target_group)
 
 
 class HallAdmin(admin.ModelAdmin):
@@ -223,7 +247,11 @@ class RentPaymentAdmin(admin.ModelAdmin):
 admin.site.unregister(Group)
 
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ['name']
+    list_display = ['name', 'permissions_count']
+    
+    def permissions_count(self, obj):
+        return obj.permissions.count()
+    permissions_count.short_description = 'Количество прав'
     
     def get_form(self, request, obj=None, **kwargs):
         """Переопределяем форму для использования кастомного виджета прав"""
@@ -240,6 +268,14 @@ class GroupAdmin(admin.ModelAdmin):
             )
         
         return form
+    
+    def save_model(self, request, obj, form, change):
+        """При сохранении группы обновляем права у всех пользователей в этой группе"""
+        super().save_model(request, obj, form, change)
+        
+        # Обновляем права у всех пользователей в группе
+        for user in obj.user_set.all():
+            user.user_permissions.set(obj.permissions.all())
 
 # Регистрируем все модели в стандартном сайте админа
 admin.site.register(Tariff, TariffAdmin)
