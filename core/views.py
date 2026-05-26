@@ -41,6 +41,7 @@ def parse_datetime_to_local(start_str):
         return None
 
 
+@login_required
 def calendar_view(request):
     """Отображение календаря занятий"""
     halls = Hall.objects.all()
@@ -69,6 +70,7 @@ def calendar_view(request):
     })
 
 
+@login_required
 def get_events(request):
     """Получение событий для календаря (JSON)"""
     # Получаем параметры периода от FullCalendar
