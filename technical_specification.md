@@ -36,7 +36,7 @@
 | first_name | text | Да | Макс. 150 символов | Имя пользователя |
 | last_name | text | Да | Макс. 150 символов | Фамилия пользователя |
 | phone | tel | Да | Формат +7 (XXX) XXX-XX-XX, уникальность в системе | Номер телефона (используется как логин) |
-| password1 | password | Да | Мин. 8 символов, соответствие требованиям безопасности Django | Пароль |
+| password1 | password | Да | Мин. 6 символов, допустима низкая безопасность пароля | Пароль |
 | password2 | password | Да | Должен совпадать с password1 | Подтверждение пароля |
 
 ### Бизнес-логика
@@ -53,7 +53,7 @@
 - "Пользователь с таким номером телефона уже существует"
 - "Пароли не совпадают"
 - "Неверный формат номера телефона"
-- Ошибки валидации Django для каждого поля
+- Ошибки валидации для каждого поля
 
 ## UI/UX требования
 
@@ -96,10 +96,9 @@
 ## Технические требования
 
 ### Backend
-- **Model:** User (AbstractUser)
-- **Form:** RegistrationForm (Django Form)
+- **Model:** User
+- **Form:** RegistrationForm
 - **View:** Function-based view с обработкой GET/POST
-- **Template:** `core/register.html` extends `core/auth_base.html`
 
 ### Frontend
 - **CSS:** auth.css (общие стили аутентификации)
@@ -136,8 +135,6 @@ User:
 
 ## Ролевой доступ
 - Доступна только неавторизованным пользователям
-- Доступна только обычным пользователям (role='student')
-- Администраторы, модераторы и суперадмины перенаправляются на `/admin/login/`
 
 ## Функциональные требования
 
@@ -148,22 +145,20 @@ User:
 | password | password | Да | Пароль |
 
 ### Бизнес-логика
-1. **Аутентификация:** Проверка учётных данных через Django authenticate()
-2. **Проверка роли:**
-   - Если пользователь имеет роль moderator/admin или is_superuser=True → редирект на `/admin/login/`
+1. **Аутентификация:** Проверка учётных данных
+2. **Проверка роли:**   
    - Если обычный пользователь → вход в систему и редирект на `/profile/`
 3. **Создание сессии:** При успешной аутентификации создаётся сессия пользователя
 4. **Обработка ошибок:** При неудачной попытке отображается сообщение об ошибке
 
 ### Дополнительные функции
-- **Telegram Login Widget:** Кнопка быстрого входа через Telegram (опционально)
-- **VK OAuth:** Кнопка быстрого входа через ВКонтакте (опционально)
-- **Remember me:** Возможность сохранения сессии (стандартными средствами Django)
+- **Telegram Login Widget:** Кнопка быстрого входа через Telegram
+- **VK OAuth:** Кнопка быстрого входа через ВКонтакте
+- **Remember me:** Возможность сохранения сессии
 
 ### Сообщения об ошибках
 - "Неправильное имя пользователя или пароль"
 - "Аккаунт деактивирован" (если is_active=False)
-- "Доступ запрещён. Используйте вход для администратора" (для персонала)
 
 ## UI/UX требования
 
@@ -202,14 +197,14 @@ User:
 
 ### Backend
 - **Model:** User
-- **Form:** LoginForm (Django Form)
+- **Form:** LoginForm
 - **View:** Function-based view с проверкой роли
-- **Template:** `core/login.html` extends `core/auth_base.html`
 
 ### Frontend
 - **CSS:** auth.css
 - **JS:** phone-mask.js (для маски ввода телефона)
-- **Telegram JS SDK:** Для виджета Telegram (опционально)
+- **Telegram JS SDK:** Для виджета Telegram
+- **VK SDK:** Для виждета ВКонтакте
 
 ### Модель данных
 Используется существующая модель User.
@@ -228,7 +223,6 @@ User:
 ## Ролевой доступ
 - **Требуется авторизация:** Да
 - Доступна всем авторизованным пользователям
-- Для модераторов и администраторов отображается дополнительное боковое меню
 
 ## Функциональные требования
 
@@ -267,13 +261,6 @@ User:
 
 **Критерии выборки:** Занятия с ClassSession.date_time < текущего времени, которые пользователь посетил (Attendance.status = 'attended').
 
-#### Боковое меню (только для модераторов/админов)
-- Ссылка "Главная админа" → `/admin/`
-- Ссылка "⚙️ Настройки новых пользователей" → `/admin/core/userdefaultsettings/`
-- Ссылка "🔑 Группы прав" → `/admin/auth/group/`
-- Ссылка "📅 Календарь" → `/calendar/`
-- Ссылка "➕ Создать занятие" → открытие модального окна календаря
-
 ### Кнопки действий
 - **"Перейти к расписанию"** (в шапке и внизу страницы) → `/calendar/`
 - **"Выйти"** → `/logout/`
@@ -285,9 +272,8 @@ User:
    - 18:00–04:59 → "Добрый вечер"
 2. **Расчёт остатка абонемента:**
    - Поиск активного абонемента (Subscription) со статусом 'active'
-   - sessions_remaining显示当前剩余次数
+   - sessions_remaining
    - Если нет активного абонемента → "0 занятий"
-3. **Фильтрация по ролям:** Боковое меню отображается только если user.is_moderator или user.is_admin
 
 ## UI/UX требования
 
@@ -335,30 +321,6 @@ User:
 - Десктоп: карточки в три колонки
 
 ## Технические требования
-
-### Backend
-- **View:**@login_required decorated function
-- **QuerySets:**
-  ```python
-  upcoming_sessions = ClassSession.objects.filter(
-      bookings__client=user,
-      bookings__status__in=['confirmed', 'paid'],
-      date_time__gt=timezone.now()
-  ).select_related('class_type', 'hall').order_by('date_time')
-
-  past_sessions = Attendance.objects.filter(
-      client=user.client_profile,
-      status='attended',
-      session__date_time__lt=timezone.now()
-  ).select_related('session__class_type', 'session__hall').order_by('-session__date_time')
-
-  active_subscription = Subscription.objects.filter(
-      client=user.client_profile,
-      status='active',
-      expires_at__gt=timezone.now()
-  ).first()
-  ```
-- **Template:** `core/profile.html` extends `core/auth_base.html`
 
 ### Frontend
 - **CSS:** auth.css, profile.css
@@ -443,7 +405,7 @@ User:
 
 #### Вкладка "Запись"
 **Отображаемая информация:**
-- Список записанных учеников (ФИО, телефон)
+- Список записанных учеников (Имя и первая буква фамилии с точкой)
 - Количество свободных мест (max_participants - количество записей)
 - Статус записи текущего пользователя
 
@@ -459,14 +421,8 @@ User:
 **Действия для модераторов/админов:**
 - Просмотр полного списка записанных
 - Ручное добавление клиента через поиск
-- Отметка фактического посещения (чекбоксы)
 - Сохранение посещаемости
 
-### Поиск клиентов (для персонала)
-- **Endpoint:** `/api/clients/search/`
-- **Параметры:** query (строка поиска)
-- **Поиск по:** first_name, last_name, phone
-- **Возврат:** Список клиентов с ID, ФИО, телефоном
 
 ## UI/UX требования
 
@@ -517,8 +473,6 @@ User:
 
 ### Цветовая схема
 - События используют цвет зала (Hall.color)
-- Фон календаря светлый (#fff)
-- Акцентные цвета для кнопок (синий, красный, серый)
 
 ### Адаптивность
 - Мобильная версия: календарь сворачивается в список
@@ -527,80 +481,9 @@ User:
 
 ## Технические требования
 
-### Backend
-- **View:** @login_required decorated function
-- **Context:**
-  ```python
-  {
-      'halls': Hall.objects.all(),
-      'class_types': ClassType.objects.all(),
-      'is_moderator': bool,
-      'is_admin': bool,
-      'user_role': 'student'|'moderator'|'admin'
-  }
-  ```
-- **Template:** `core/calendar.html`
-
-### API Endpoints
-
-| Endpoint | Method | Описание |
-|----------|--------|----------|
-| `/api/calendar/events/` | GET | Получение событий для календаря |
-| `/api/calendar/events/create/` | POST | Создание нового события |
-| `/api/calendar/events/<id>/update/` | POST/PUT | Обновление события |
-| `/api/calendar/events/<id>/delete/` | POST | Удаление события |
-| `/api/calendar/events/<id>/enroll/` | POST | Запись на занятие |
-| `/api/calendar/events/<id>/cancel-enrollment/` | POST | Отмена записи |
-| `/api/calendar/events/<id>/attendance/` | GET | Получение списка посещаемости |
-| `/api/calendar/events/<id>/attendance/update/` | POST | Обновление посещаемости |
-| `/api/clients/search/` | GET | Поиск клиентов |
-
-### Формат данных API
-
-**GET /api/calendar/events/**
-```json
-[
-  {
-    "id": "123",
-    "title": "Растяжка",
-    "start": "2024-10-15T10:00:00",
-    "end": "2024-10-15T11:00:00",
-    "allDay": false,
-    "backgroundColor": "#4ECDC4",
-    "borderColor": "#4ECDC4",
-    "extendedProps": {
-      "hall_id": 1,
-      "hall_name": "Дом йоги",
-      "duration": 60,
-      "max_participants": 10,
-      "description": "",
-      "is_recurring": true,
-      "recurrence_id": "uuid-string"
-    }
-  }
-]
-```
-
-**POST /api/calendar/events/create/**
-```json
-{
-  "class_type_id": 1,
-  "start": "2024-10-15T10:00:00",
-  "hall_id": 1,
-  "duration": 60,
-  "max_participants": 10,
-  "is_recurring": false
-}
-```
-
-### Frontend
-- **Library:** FullCalendar.js v6
 - **CSS:** calendar.css, admin_custom.css
 - **JS:** calendar.js (вся логика взаимодействия)
 - **Timezone:** Local timezone браузера (Asia/Novosibirsk для проекта)
-
-### Модель данных
-Используются модели: ClassSession, ClassType, Hall, Tariff, Booking, Attendance, User.
 
 ---
 
@@ -611,7 +494,7 @@ User:
 
 ## Маршрут
 - **URL:** `/admin/` и все вложенные пути
-- **Методы:** GET, POST (стандартные Django Admin)
+- **Методы:** GET, POST
 
 ## Ролевой доступ
 - **Суперадмины (is_superuser=True):** Полный доступ
@@ -627,9 +510,10 @@ User:
 **CRUD операции:**
 - Создание/редактирование тарифов
 - Настройка параметров:
-  - Название, тип (group/individual/split)
-  - Цена за человека
-  - Полная цена за сплит (авторасчёт)
+  - Название
+  - Тип (групповое/индивидуальное/сплит)
+  - Цена за занятие
+  - Полная цена за сплит (активно, если тип занятия - сплит, для сплита стоимость занятия делится поровну между всеми учениками записанными на него)
   - Макс. участников
   - Параметры абонемента (доступность, кол-во занятий, стоимость, срок действия)
 
@@ -652,8 +536,6 @@ User:
 - Персональная информация (имя, фамилия, телефон)
 - Финансы (баланс)
 - Доступные тарифы (M2M связь)
-- Группы прав
-- Индивидуальные права доступа (кастомный виджет)
 - Роль (student/moderator/admin)
 
 **Отображение в списке:**
@@ -665,8 +547,8 @@ User:
 
 #### 4. Залы (Hall)
 **CRUD операции:**
-- Добавление залов
-- Настройка цвета (10 предустановленных вариантов)
+- Добавление залов (название, адрес)
+- Настройка цвета (выбор из палитры)
 - Адрес, цена за час
 
 **Визуальные индикаторы:**
@@ -709,71 +591,18 @@ User:
 #### 10. Настройки новых пользователей (UserDefaultSettings)
 **Конфигурация по умолчанию:**
 - Тарифы для новых пользователей
-- Группы прав
 - Роль
 - Начальный баланс
 
-#### 11. Группы прав (Group)
-**Управление правами:**
-- Создание групп
-- Назначение прав через кастомный виджет (таблица с чекбоксами)
-- Автоматическая синхронизация прав участников
-
-### Кастомный виджет прав доступа
-
-**Назначение:** Замена стандартного интерфейса Django для выбора прав (filter_horizontal/filter_vertical)
-
-**Структура таблицы:**
-- Строки: Модели (content_type)
-- Столбцы: Права Add, Change, Delete, View
-- Чекбоксы на пересечении
-- Всплывающие подсказки с описанием
-
-**Принцип работы:**
-1. Группировка прав по моделям
-2. Отображение в виде таблицы
-3. Один клик для активации права
-4. Автоматическое сохранение при submit формы
-
-### Боковое меню навигации
-
-**Шаблон:** `core/includes/sidebar.html`
-
-**Элементы меню:**
-- Главная админа → `/admin/`
-- ⚙️ Настройки новых пользователей
-- 🔑 Группы прав
-- 📅 Календарь → `/calendar/`
-- ➕ Создать занятие
-
-**Особенности:**
-- Скрыто на странице входа (`/admin/login/`)
-- Фиксированное позиционирование
-- Замена стандартной навигации Django
+#### 11. Роли
+**Управление ролями:**
+- Создание и редактирование ролей
+- Назначение прав ролей
 
 ## UI/UX требования
 
 ### Стили админ-панели
-- Кастомные CSS: `admin_custom.css`, `admin_permissions.css`
-- Переопределённые шаблоны: `base_site.html`, `index.html`
 - Цветовая схема соответствует бренду студии
-
-### Таблица прав доступа
-- Ховер-эффект на строках (#161616)
-- Tooltip с описанием при наведении
-- Чёткое разделение по моделям
-- Русские названия моделей и прав
-
-## Технические требования
-
-### Backend
-- **Admin classes:** Custom ModelAdmin для каждой модели
-- **Widgets:** CustomPermissionWidget для прав доступа
-- **Templates:** Переопределённые шаблоны админки
-
-### Frontend
-- **CSS:** admin_custom.css, admin_permissions.css
-- **JS:** Стандартный Django Admin JS + кастомные скрипты для виджетов
 
 ### Модель данных
 Все модели проекта доступны в админ-панели.
@@ -790,48 +619,8 @@ User:
 - **Методы:** GET, POST
 
 ## Функциональные требования
-1. Уничтожение сессии пользователя (Django logout())
+1. Уничтожение сессии пользователя
 2. Перенаправление на `/login/`
-
-## Технические требования
-- **View:** @login_required decorated function (опционально)
-- **Логика:** Вызов django.contrib.auth.logout() и redirect()
-
----
-
-# Интеграции
-
-## Telegram Authorization
-
-### Endpoint: `/api/auth/telegram/`
-**Метод:** POST
-
-**Требования:**
-- Криптографическая проверка подписи данных (HMAC-SHA256)
-- Валидация актуальности данных (не старше 24 часов)
-- Автоматическая регистрация при первом входе
-- Привязка telegram_id к пользователю
-
-**Настройка:**
-- TELEGRAM_BOT_TOKEN в .env
-- TELEGRAM_BOT_USERNAME в .env
-- Подробная инструкция в TELEGRAM_AUTH_SETUP.md
-
-## VK Authorization
-
-### Endpoint: `/api/auth/vk/`
-**Метод:** POST
-
-**Требования:**
-- Проверка OAuth токена
-- Валидация данных пользователя
-- Автоматическая регистрация при первом входе
-- Привязка vk_id к пользователю
-
-**Настройка:**
-- VK_SERVICE_KEY в .env
-- VK_CLIENT_ID в .env
-- App ID в JS-коде
 
 ---
 
@@ -844,21 +633,7 @@ User:
 | **student** | Ученик | Личный кабинет, календарь (просмотр + запись) |
 | **moderator** | Модератор | Управление расписанием, посещаемостью |
 | **admin** | Администратор | Полный доступ + назначение модераторов |
-| **supervisor** | Суперадмин Django | Полный доступ ко всем функциям |
-
-## Группы прав
-
-**Принцип работы:**
-- Права назначаются группам
-- Пользователи добавляются в группы
-- Права групп автоматически применяются к участникам
-- Изменения в группе синхронизируются со всеми участниками
-
-**Стандартные права по моделям:**
-- add_{model} — создание записей
-- change_{model} — редактирование
-- delete_{model} — удаление
-- view_{model} — просмотр
+| **supervisor** | Суперадмин | Полный доступ ко всем функциям |
 
 ---
 
@@ -870,8 +645,8 @@ User:
 - Дедлайн оплаты устанавливается за 4 часа до занятия
 
 ## Ценообразование для сплита
-- Если в сплит-группе 2 человека → цена делится поровну
-- Если в сплит-группе 1 человек → платит полную стоимость за двоих
+- Если в сплит-группе 2 и более человек → цена делится поровну
+- Если в сплит-группе 1 человек → платит полную стоимость
 
 ## Абонементы
 - Активация при первом использовании
@@ -889,194 +664,7 @@ User:
 # Требования к безопасности
 
 1. **CSRF-защита:** На всех формах
-2. **Хеширование паролей:** Стандартными средствами Django
+2. **Хеширование паролей:** Стандартными средствами
 3. **Проверка прав доступа:** На уровне представлений
-4. **Валидация данных Telegram:** HMAC-SHA256 подпись
 5. **Разделение конфигураций:** Чувствительные данные в .env (не в репозитории)
 6. **Изоляция данных:** Пользователи видят только свои данные согласно роли
-
----
-
-# Технические характеристики
-
-## Стек технологий (референсный)
-- **Backend:** Django (Python)
-- **Database:** SQLite (может быть заменён на PostgreSQL/MySQL)
-- **Frontend:** HTML/CSS, Vanilla JS
-- **Calendar Library:** FullCalendar.js v6
-- **Authentication:** Django Auth + Telegram/VK OAuth
-
-## Требования к альтернативной реализации
-При воссоздании на другом стеке необходимо обеспечить:
-1. Совместимость структуры базы данных (модели)
-2. Соответствие бизнес-логике (правила, валидация)
-3. Идентичный пользовательский интерфейс
-4. Те же API endpoints (формат данных)
-5. Ту же систему прав доступа и ролевую модель
-6. Поддержку тех же интеграций (Telegram, VK)
-
-## Производительность
-- Оптимизация запросов через select_related/prefetch_related
-- Индексация часто используемых полей (date_time, recurrence_id, status)
-- Кэширование статических данных (списки залов, типов занятий)
-
----
-
-# Приложение A: Структура базы данных
-
-## Модели данных
-
-### Tariff
-```
-id: AutoField (PK)
-name: CharField(100)
-tariff_type: CharField(20) [group|individual|split]
-price_per_person: DecimalField(10,2)
-price_full_split: DecimalField(10,2)
-max_participants: PositiveIntegerField
-description: TextField
-is_active: BooleanField
-created_at: DateTimeField
-is_subscription_available: BooleanField
-subscription_sessions_count: PositiveIntegerField
-subscription_price: DecimalField(10,2)
-subscription_validity_days: PositiveIntegerField
-```
-
-### ClassType
-```
-id: AutoField (PK)
-name: CharField(100)
-description: TextField
-duration_minutes: PositiveIntegerField
-default_tariff: ForeignKey(Tariff)
-```
-
-### User (AbstractUser)
-```
-id: AutoField (PK)
-username: CharField(150, unique)
-first_name: CharField(150)
-last_name: CharField(150)
-phone: CharField(20, unique)
-password: CharField(128) [hashed]
-role: CharField(20) [student|moderator|admin]
-created_at: DateTimeField
-is_active: BooleanField
-balance: DecimalField(10,2)
-telegram_id: BigIntegerField (unique, nullable)
-vk_id: BigIntegerField (unique, nullable)
-allowed_tariffs: ManyToMany(Tariff)
-groups: ManyToMany(Group)
-user_permissions: ManyToMany(Permission)
-```
-
-### Hall
-```
-id: AutoField (PK)
-name: CharField(100)
-address: TextField
-price_per_hour: DecimalField(10,2)
-color: CharField(7) [hex color]
-```
-
-### ClassSession
-```
-id: AutoField (PK)
-class_type: ForeignKey(ClassType)
-tariff: ForeignKey(Tariff)
-date_time: DateTimeField
-duration: PositiveIntegerField
-hall: ForeignKey(Hall, nullable)
-is_recurring: BooleanField
-recurrence_id: CharField(50, db_index)
-```
-
-### Booking
-```
-id: AutoField (PK)
-session: ForeignKey(ClassSession, related_name='bookings')
-client: ForeignKey(User)
-status: CharField(20) [pending|confirmed|paid|cancelled|...]
-booked_at: DateTimeField
-payment_deadline: DateTimeField
-paid_at: DateTimeField
-amount_paid: DecimalField(10,2)
-comment: TextField
-is_subscription_used: BooleanField
-subscription: ForeignKey(Subscription, nullable)
-```
-
-### PaymentTransaction
-```
-id: AutoField (PK)
-client: ForeignKey(User, related_name='transactions')
-transaction_type: CharField(25) [deposit|debit|refund|...]
-amount: DecimalField(10,2)
-balance_before: DecimalField(10,2)
-balance_after: DecimalField(10,2)
-booking: ForeignKey(Booking, nullable)
-subscription: ForeignKey(Subscription, nullable)
-comment: TextField
-created_at: DateTimeField
-```
-
-### Subscription
-```
-id: AutoField (PK)
-client: ForeignKey(User, related_name='subscriptions')
-tariff: ForeignKey(Tariff)
-sessions_total: PositiveIntegerField
-sessions_remaining: PositiveIntegerField
-purchased_at: DateTimeField
-activated_at: DateTimeField
-expires_at: DateTimeField
-status: CharField(20) [active|expired|used_up|cancelled]
-total_price: DecimalField(10,2)
-comment: TextField
-```
-
-### Attendance
-```
-id: AutoField (PK)
-session: ForeignKey(ClassSession)
-client: ForeignKey(User)
-status: CharField(20) [attended|no_show]
-checked_at: DateTimeField
-```
-
-### UserDefaultSettings
-```
-id: AutoField (PK)
-default_role: CharField(20)
-default_balance: DecimalField(10,2)
-default_tariffs: ManyToMany(Tariff)
-default_groups: ManyToMany(Group)
-```
-
----
-
-# Приложение B: Диаграмма состояний
-
-## Статусы записи (Booking)
-```
-pending → confirmed → paid
-   ↓          ↓         ↓
-cancelled  cancelled  no_show
-           _by_admin
-```
-
-## Статусы абонемента (Subscription)
-```
-active → expired (по времени)
-   ↓
-used_up (сессии закончились)
-   ↓
-cancelled (администратором)
-```
-
----
-
-Документ составлен на основе анализа проекта Django CRM для йога-студии.
-Версия: 1.0
-Дата: 2024
