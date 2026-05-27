@@ -9,6 +9,61 @@
 
 ---
 
+## Технологический стек
+
+### Основной стек разработки
+- **Язык программирования:** TypeScript (fullstack)
+- **Frontend:** React 18+ с TypeScript
+- **Backend:** Node.js + NestJS
+- **Стилизация:** Tailwind CSS
+- **State Management:** Zustand + TanStack Query (React Query)
+
+### База данных и ORM
+- **СУБД:** PostgreSQL 15+
+- **ORM:** Prisma ORM
+- **Миграции:** Prisma Migrate
+
+### Аутентификация и авторизация
+- **Основная аутентификация:** Passport.js + JWT (JSON Web Tokens)
+- **OAuth провайдеры:** 
+  - Telegram Login Widget
+  - VK OAuth
+- **Сессии:** Redis (для хранения blacklist токенов и кэширования)
+
+### Валидация данных
+- **Библиотека валидации:** Zod (типобезопасная валидация схем)
+- **Валидация форм:** React Hook Form + Zod resolver
+
+### Календарь и UI компоненты
+- **Календарь:** FullCalendar v6 (обязательное требование ТЗ)
+- **UI библиотека:** Headless UI или Radix UI (для доступных компонентов)
+- **Иконки:** Lucide React или Heroicons
+
+### API документация
+- **Документация API:** Swagger/OpenAPI (через @nestjs/swagger)
+- **Тестирование API:** Postman collection + автоматические тесты
+
+### Тестирование
+- **Unit-тесты:** Jest
+- **E2E-тесты:** Playwright
+- **Интеграционные тесты:** Supertest + Jest
+
+### Инфраструктура и развёртывание
+- **Контейнеризация:** Docker + Docker Compose
+- **Кэш/очереди:** Redis 7+
+- **CI/CD:** GitHub Actions или GitLab CI
+- **Логирование:** Winston + Pino
+- **Мониторинг:** Prometheus + Grafana (опционально)
+
+### Требования к безопасности
+- HTTPS обязательный для production
+- Хеширование паролей: bcrypt или argon2
+- Защита от CSRF, XSS, SQL injection
+- Rate limiting для API endpoints
+- Валидация всех входных данных через Zod
+
+---
+
 # Страница 1: Регистрация (`/register/`)
 
 ## Назначение
