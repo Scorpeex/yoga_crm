@@ -306,12 +306,13 @@ def create_sessions(class_types, halls, tariffs):
             defaults={
                 'tariff': tariffs['group'],
                 'duration': 60,
-                'hall': halls['main']
+                'hall': halls['main'],
+                'max_participants_override': 10  # Переопределяем для групповых занятий
             }
         )
         sessions[f'yoga_{i}'] = session
     
-    # Пилатес (послезавтра в 12:00)
+    # Пилатес (послезавтра в 12:00) - с ограничением 5 участников
     pilates_date = now.replace(hour=12, minute=0, second=0, microsecond=0) + timedelta(days=2)
     pilates_session, _ = ClassSession.objects.get_or_create(
         class_type=class_types['pilates'],
@@ -319,12 +320,13 @@ def create_sessions(class_types, halls, tariffs):
         defaults={
             'tariff': tariffs['group'],
             'duration': 60,
-            'hall': halls['small']
+            'hall': halls['small'],
+            'max_participants_override': 5  # Малый зал - меньше мест
         }
     )
     sessions['pilates_1'] = pilates_session
     
-    # Стретчинг (через 3 дня в 19:00)
+    # Стретчинг (через 3 дня в 19:00) - с ограничением 8 участников
     stretch_date = now.replace(hour=19, minute=0, second=0, microsecond=0) + timedelta(days=3)
     stretch_session, _ = ClassSession.objects.get_or_create(
         class_type=class_types['stretching'],
@@ -332,12 +334,13 @@ def create_sessions(class_types, halls, tariffs):
         defaults={
             'tariff': tariffs['group'],
             'duration': 45,
-            'hall': halls['main']
+            'hall': halls['main'],
+            'max_participants_override': 8
         }
     )
     sessions['stretching_1'] = stretch_session
     
-    # Персональная тренировка (завтра в 16:00)
+    # Персональная тренировка (завтра в 16:00) - только 1 участник
     personal_date = now.replace(hour=16, minute=0, second=0, microsecond=0) + timedelta(days=1)
     personal_session, _ = ClassSession.objects.get_or_create(
         class_type=class_types['personal'],
@@ -345,12 +348,13 @@ def create_sessions(class_types, halls, tariffs):
         defaults={
             'tariff': tariffs['individual'],
             'duration': 60,
-            'hall': halls['vip']
+            'hall': halls['vip'],
+            'max_participants_override': 1
         }
     )
     sessions['personal_1'] = personal_session
     
-    # Сплит тренировка (послезавтра в 18:00)
+    # Сплит тренировка (послезавтра в 18:00) - максимум 2 участника
     duo_date = now.replace(hour=18, minute=0, second=0, microsecond=0) + timedelta(days=2)
     duo_session, _ = ClassSession.objects.get_or_create(
         class_type=class_types['duo'],
@@ -358,12 +362,13 @@ def create_sessions(class_types, halls, tariffs):
         defaults={
             'tariff': tariffs['split'],
             'duration': 60,
-            'hall': halls['small']
+            'hall': halls['small'],
+            'max_participants_override': 2
         }
     )
     sessions['duo_1'] = duo_session
     
-    # Еще одно занятие через 5 часов (для теста списания)
+    # Еще одно занятие через 5 часов (для теста списания) - 3 участника для теста
     soon_session_date = now + timedelta(hours=5)
     soon_session, _ = ClassSession.objects.get_or_create(
         class_type=class_types['yoga'],
@@ -371,7 +376,8 @@ def create_sessions(class_types, halls, tariffs):
         defaults={
             'tariff': tariffs['group'],
             'duration': 60,
-            'hall': halls['main']
+            'hall': halls['main'],
+            'max_participants_override': 3
         }
     )
     sessions['yoga_soon'] = soon_session
