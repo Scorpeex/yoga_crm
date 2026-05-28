@@ -52,6 +52,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Клик по дате - создание нового события
         select: function(info) {
+            // Определяем роль пользователя
+            const userRole = window.USER_ROLE || 'student';
+            const isStaff = userRole === 'admin' || userRole === 'moderator';
+            
+            // Для обычных пользователей запрещаем создание событий
+            if (!isStaff) {
+                calendar.unselect(); // Снимаем выделение
+                return;
+            }
+            
             // При явном выборе времени используем локальную дату без конвертации
             // info.start теперь в локальном времени браузера (без timeZone конвертации)
             const localStart = info.start;
