@@ -774,14 +774,14 @@ def profile_view(request):
         bookings__client=client,
         bookings__status__in=['confirmed', 'paid'],
         date_time__gte=timezone.now()
-    ).select_related('class_type', 'hall', 'bookings').order_by('date_time')[:10]
+    ).select_related('class_type', 'hall').prefetch_related('bookings').order_by('date_time')[:10]
     
     # Получаем историю посещений
     past_sessions = ClassSession.objects.filter(
         bookings__client=client,
         bookings__status__in=['paid'],
         date_time__lt=timezone.now()
-    ).select_related('class_type', 'hall', 'bookings').order_by('-date_time')[:20]
+    ).select_related('class_type', 'hall').prefetch_related('bookings').order_by('-date_time')[:20]
     
     # Получаем активные абонементы клиента
     active_subscriptions = Subscription.objects.filter(
