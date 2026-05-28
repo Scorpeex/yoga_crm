@@ -1,1 +1,1 @@
-Nothing should be ignored based on the provided file changes, as they only include source files (.js and .py) without any build artifacts, dependencies, or temporary files.
+Nothing should be ignored based on the provided file changes. The only modified file is a JavaScript source file (`core/static/core/js/calendar.js`), which is a legitimate source code file that should not be ignored. There are no build artifacts, dependencies, temporary files, or other items that require ignoring.

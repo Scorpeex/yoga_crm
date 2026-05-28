@@ -74,8 +74,14 @@ document.addEventListener('DOMContentLoaded', function() {
             openModal(null, selectedDateFromClick);
         },
         
-        // Клик по событию - редактирование
+        // Клик по событию - редактирование/запись
         eventClick: function(info) {
+            // Определяем роль пользователя
+            const userRole = window.USER_ROLE || 'student';
+            const isStaff = userRole === 'admin' || userRole === 'moderator';
+            
+            // Для обычных пользователей открываем только вкладку записи
+            // Модальное окно откроется в openModal с правильной логикой
             openModal(info.event);
         },
         
