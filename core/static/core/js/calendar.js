@@ -520,6 +520,9 @@ function updateEvent(event) {
     const data = {
         start: `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`,
         duration: event.end ? Math.round((event.end - event.start) / 60000) : 60,
+        // Сохраняем существующие значения tariff_id и max_participants_override
+        tariff_id: event.extendedProps.tariff_id || null,
+        max_participants_override: event.extendedProps.max_participants_override || null,
     };
     
     fetch(`/api/calendar/events/${event.id}/`, {

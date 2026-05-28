@@ -153,6 +153,8 @@ def get_events(request):
                 'hall_name': session.hall.name if session.hall else '',
                 'duration': session.duration,
                 'max_participants': max_participants,
+                'tariff_id': session.tariff.id if session.tariff else None,
+                'max_participants_override': session.max_participants_override,
                 'description': session.class_type.description if session.class_type.description else '',
                 'is_recurring': session.is_recurring,
                 'recurrence_id': session.recurrence_id or ''
