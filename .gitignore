@@ -5,12 +5,9 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Logs and temp files
-*.log
-*.tmp
+# Database
+db.sqlite3
 
-# Environment
-.env
-.env.local
-*.env.*
+# Logs
+*.log
 ```

@@ -185,7 +185,7 @@ def create_event(request):
         start = data.get('start')
         hall_id = data.get('hall_id')
         duration = data.get('duration')
-        max_participants = data.get('max_participants', 20)
+        tariff_id = data.get('tariff_id')
         is_recurring = data.get('is_recurring', False)
         
         if not start:
@@ -209,12 +209,18 @@ def create_event(request):
         if hall_id:
             hall = get_object_or_404(Hall, id=hall_id)
         
+        tariff = None
+        if tariff_id:
+            tariff = get_object_or_404(Tariff, id=tariff_id)
+        elif class_type.default_tariff:
+            tariff = class_type.default_tariff
+        
         session = ClassSession.objects.create(
             class_type=class_type,
+            tariff=tariff,
             date_time=date_time,
             duration=duration,
             hall=hall,
-            max_participants=max_participants,
             is_recurring=is_recurring,
         )
         
@@ -228,10 +234,10 @@ def create_event(request):
                 new_date = date_time + timedelta(weeks=week)
                 recurring_session = ClassSession.objects.create(
                     class_type=class_type,
+                    tariff=tariff,
                     date_time=new_date,
                     duration=duration,
                     hall=hall,
-                    max_participants=max_participants,
                     is_recurring=True,
                     recurrence_id=session.recurrence_id,
                 )
@@ -296,8 +302,11 @@ def update_event(request, event_id):
                 session.hall = get_object_or_404(Hall, id=data['hall_id'])
             else:
                 session.hall = None
-        if 'max_participants' in data:
-            session.max_participants = data['max_participants']
+        if 'tariff_id' in data:
+            if data['tariff_id']:
+                session.tariff = get_object_or_404(Tariff, id=data['tariff_id'])
+            else:
+                session.tariff = None
         
         session.save()
         
@@ -389,7 +398,7 @@ def get_attendance(request, session_id):
                 'client_phone': attendance.client.phone or '',
                 'attended': attendance.status == 'attended',
                 'is_current_user': attendance.client_id == current_user_client_id,
-                'max_participants': session.max_participants,
+                'max_participants': session.tariff.max_participants if session.tariff else 10,
                 'role': attendance.client.role
             }
             attendance_list.append(attendance_data)
@@ -484,7 +493,8 @@ def enroll_to_class(request, session_id):
         
         # Проверяем наличие свободных мест
         current_count = Attendance.objects.filter(session=session).count()
-        if current_count >= session.max_participants:
+        max_participants = session.tariff.max_participants if session.tariff else 10
+        if current_count >= max_participants:
             return JsonResponse({'error': 'Нет свободных мест'}, status=400)
         
         # Создаем запись о посещении
