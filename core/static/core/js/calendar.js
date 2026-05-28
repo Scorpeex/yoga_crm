@@ -177,6 +177,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Обновляем состояние кнопок
             window.updateCapacityButtons(maxParticipants);
         }
+        // Скрываем предупреждение и убираем красную рамку при выборе тарифа
+        const tariffWarning = document.getElementById('tariffWarning');
+        if (tariffWarning) {
+            tariffWarning.style.display = 'none';
+        }
+        this.style.borderColor = '';
     });
     
     // Обработчики для кнопок выбора вместимости
@@ -308,6 +314,14 @@ function openModal(event, startStr) {
         updateCapacityButtons(maxParticipants);
         document.getElementById('eventHall').value = event.extendedProps.hall_id || '';
         
+        // Устанавливаем тариф из расширенных свойств события
+        const tariffId = event.extendedProps.tariff_id;
+        if (tariffId) {
+            document.getElementById('eventTariff').value = tariffId.toString();
+        } else {
+            document.getElementById('eventTariff').value = '';
+        }
+        
         // Повторяющееся событие
         const isRecurring = event.extendedProps.is_recurring || false;
         document.getElementById('eventRecurring').checked = isRecurring;
@@ -396,6 +410,15 @@ function closeModal() {
     document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
     document.querySelector('.tab-btn[data-tab="class-tab"]').classList.add('active');
     document.getElementById('class-tab').classList.add('active');
+    // Скрываем предупреждение о тарифе и сбрасываем стили
+    const tariffWarning = document.getElementById('tariffWarning');
+    if (tariffWarning) {
+        tariffWarning.style.display = 'none';
+    }
+    const tariffSelect = document.getElementById('eventTariff');
+    if (tariffSelect) {
+        tariffSelect.style.borderColor = '';
+    }
 }
 
 // Инициализация выпадающих списков часов и минут (08-20 часы, 00-50 минуты с шагом 10)
@@ -443,6 +466,24 @@ function saveEvent() {
     // Получаем tariff_id и max_participants_override из формы
     const tariffSelect = document.getElementById('eventTariff');
     const tariffId = tariffSelect.value ? parseInt(tariffSelect.value) : null;
+    
+    // Проверка: тариф обязателен для заполнения
+    if (!tariffId) {
+        const tariffWarning = document.getElementById('tariffWarning');
+        if (tariffWarning) {
+            tariffWarning.style.display = 'block';
+        }
+        tariffSelect.style.borderColor = '#dc3545';
+        return; // Прерываем сохранение
+    } else {
+        // Скрываем предупреждение, если тариф выбран
+        const tariffWarning = document.getElementById('tariffWarning');
+        if (tariffWarning) {
+            tariffWarning.style.display = 'none';
+        }
+        tariffSelect.style.borderColor = '';
+    }
+    
     const maxParticipantsOverride = parseInt(document.getElementById('eventMaxParticipants').value) || null;
     
     const data = {

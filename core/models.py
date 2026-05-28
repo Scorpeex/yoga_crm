@@ -166,7 +166,7 @@ class ClassSession(models.Model):
     """Модель занятия"""
     class_type = models.ForeignKey(ClassType, on_delete=models.CASCADE, verbose_name="Занятие")
     tariff = models.ForeignKey(Tariff, on_delete=models.PROTECT, verbose_name="Тариф",
-                               help_text="Тариф для этого занятия")
+                               help_text="Тариф для этого занятия", null=True, blank=True)
     date_time = models.DateTimeField("Дата и время")
     duration = models.PositiveIntegerField("Длительность (мин)", default=60)
     hall = models.ForeignKey(Hall, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Зал")
