@@ -440,13 +440,10 @@ function saveEvent() {
     const minute = document.getElementById('startMinute').value;
     const timeValue = `${hour}:${minute}`;
     
-    // Получаем tariff_id и max_participants из выбранного тарифа
+    // Получаем tariff_id и max_participants_override из формы
     const tariffSelect = document.getElementById('eventTariff');
     const tariffId = tariffSelect.value ? parseInt(tariffSelect.value) : null;
-    const selectedOption = tariffSelect.selectedOptions[0];
-    const maxParticipantsFromTariff = selectedOption && selectedOption.dataset.maxParticipants 
-        ? parseInt(selectedOption.dataset.maxParticipants) 
-        : 10;
+    const maxParticipantsOverride = parseInt(document.getElementById('eventMaxParticipants').value) || null;
     
     const data = {
         class_type_id: parseInt(document.getElementById('eventClassType').value),
@@ -454,6 +451,7 @@ function saveEvent() {
         duration: parseInt(document.getElementById('eventDuration').value),
         hall_id: document.getElementById('eventHall').value || null,
         tariff_id: tariffId,
+        max_participants_override: maxParticipantsOverride,
         is_recurring: document.getElementById('eventRecurring').checked,
     };
     

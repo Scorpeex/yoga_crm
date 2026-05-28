@@ -137,8 +137,8 @@ def get_events(request):
         # Время хранится как локальное (без timezone info), используем его напрямую
         local_dt = session.date_time
         
-        # Получаем max_participants из тарифа или устанавливаем по умолчанию
-        max_participants = session.tariff.max_participants if session.tariff else 10
+        # Получаем max_participants с учетом переопределения
+        max_participants = session.get_max_participants()
         
         events.append({
             'id': str(session.id),
@@ -186,6 +186,7 @@ def create_event(request):
         hall_id = data.get('hall_id')
         duration = data.get('duration')
         tariff_id = data.get('tariff_id')
+        max_participants_override = data.get('max_participants_override')
         is_recurring = data.get('is_recurring', False)
         
         if not start:
@@ -222,6 +223,7 @@ def create_event(request):
             duration=duration,
             hall=hall,
             is_recurring=is_recurring,
+            max_participants_override=max_participants_override if max_participants_override is not None else None,
         )
         
         # Если занятие повторяющееся, создаем события на 4 недели вперед
@@ -240,6 +242,7 @@ def create_event(request):
                     hall=hall,
                     is_recurring=True,
                     recurrence_id=session.recurrence_id,
+                    max_participants_override=max_participants_override if max_participants_override is not None else None,
                 )
                 created_events.append({
                     'id': recurring_session.id,
@@ -306,6 +309,8 @@ def update_event(request, event_id):
                 session.tariff = get_object_or_404(Tariff, id=data['tariff_id'])
             else:
                 session.tariff = None
+        if 'max_participants_override' in data:
+            session.max_participants_override = data['max_participants_override'] if data['max_participants_override'] is not None else None
         
         session.save()
         
@@ -400,8 +405,8 @@ def get_attendance(request, session_id):
             }
             attendance_list.append(attendance_data)
         
-        # Получаем max_participants из тарифа занятия
-        max_participants = session.tariff.max_participants if session.tariff else 10
+        # Получаем max_participants с учетом переопределения
+        max_participants = session.get_max_participants()
         
         return JsonResponse({
             'success': True,
@@ -494,7 +499,7 @@ def enroll_to_class(request, session_id):
         
         # Проверяем наличие свободных мест
         current_count = Attendance.objects.filter(session=session).count()
-        max_participants = session.tariff.max_participants if session.tariff else 10
+        max_participants = session.get_max_participants()
         if current_count >= max_participants:
             return JsonResponse({'error': 'Нет свободных мест'}, status=400)
         
