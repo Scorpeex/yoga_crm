@@ -1,1 +1,45 @@
-Nothing should be ignored based on the provided file changes. The only modified file is a JavaScript source file (`core/static/core/js/calendar.js`), which is a legitimate source code file that should not be ignored. There are no build artifacts, dependencies, temporary files, or other items that require ignoring.
+```
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+
+# Dependencies
+.venv/
+venv/
+node_modules/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Python specific
+*.py[cod]
+*$py.class
+*.so
+.Python
+```

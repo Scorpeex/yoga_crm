@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 import pytz
 from django.conf import settings
-from .models import ClassSession, Hall, ClassType, User, Attendance, UserDefaultSettings
+from .models import ClassSession, Hall, ClassType, User, Attendance, UserDefaultSettings, Tariff
 from .forms import RegistrationForm, LoginForm
 from .telegram_auth import validate_telegram_auth_data
 from .vk_auth import validate_vk_oauth_data
@@ -46,6 +46,7 @@ def calendar_view(request):
     """Отображение календаря занятий"""
     halls = Hall.objects.all()
     class_types = ClassType.objects.all()
+    tariffs = Tariff.objects.filter(is_active=True)
     
     # Проверяем права пользователя
     is_moderator = False
@@ -63,6 +64,7 @@ def calendar_view(request):
     return render(request, 'core/calendar.html', {
         'halls': halls,
         'class_types': class_types,
+        'tariffs': tariffs,
         'is_moderator': is_moderator,
         'is_admin': is_admin,
         'user_role': 'admin' if is_admin else ('moderator' if is_moderator else 'student'),

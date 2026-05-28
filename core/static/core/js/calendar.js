@@ -168,6 +168,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Обработчик для выбора тарифа - обновляет max_participants автоматически
+    document.getElementById('eventTariff').addEventListener('change', function() {
+        const selectedOption = this.selectedOptions[0];
+        const maxParticipants = selectedOption.dataset.maxParticipants;
+        if (maxParticipants) {
+            document.getElementById('eventMaxParticipants').value = maxParticipants;
+            // Обновляем состояние кнопок
+            window.updateCapacityButtons(maxParticipants);
+        }
+    });
+    
     // Обработчики для кнопок выбора вместимости
     document.querySelectorAll('.capacity-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -351,8 +362,10 @@ function openModal(event, startStr) {
         }
         
         document.getElementById('eventDuration').value = 60;
-        document.getElementById('eventMaxParticipants').value = 20;
-        updateCapacityButtons(20);
+        // При создании нового события сбрасываем тариф и max_participants
+        document.getElementById('eventTariff').value = '';
+        document.getElementById('eventMaxParticipants').value = 10;
+        updateCapacityButtons(10);
         document.getElementById('eventHall').value = '';
         document.getElementById('eventRecurring').checked = false;
         deleteBtn.removeAttribute('data-is-recurring');
@@ -427,12 +440,20 @@ function saveEvent() {
     const minute = document.getElementById('startMinute').value;
     const timeValue = `${hour}:${minute}`;
     
+    // Получаем tariff_id и max_participants из выбранного тарифа
+    const tariffSelect = document.getElementById('eventTariff');
+    const tariffId = tariffSelect.value ? parseInt(tariffSelect.value) : null;
+    const selectedOption = tariffSelect.selectedOptions[0];
+    const maxParticipantsFromTariff = selectedOption && selectedOption.dataset.maxParticipants 
+        ? parseInt(selectedOption.dataset.maxParticipants) 
+        : 10;
+    
     const data = {
         class_type_id: parseInt(document.getElementById('eventClassType').value),
         start: timeValue,
         duration: parseInt(document.getElementById('eventDuration').value),
         hall_id: document.getElementById('eventHall').value || null,
-        max_participants: parseInt(document.getElementById('eventMaxParticipants').value),
+        tariff_id: tariffId,
         is_recurring: document.getElementById('eventRecurring').checked,
     };
     
