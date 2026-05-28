@@ -1,5 +1,13 @@
-```
-# No build artifacts, dependencies, or temporary files detected in changes
-# Only documentation file (technical_specification.md) was modified
-# Source code and documentation files should not be ignored
-```
+# Examples 1:
+# Project with only source/config files
+
+# Example 2 (Project with artifacts):
+# Input contained build artifacts like .pyc, dist/, .env.local, .vscode/
+# Output would include appropriate ignore rules for those artifacts
+
+# For the main input provided:
+# Only development_plan.md was added (a markdown source file)
+# No build artifacts, dependencies, or temp files present
+# Therefore, no ignore rules are needed
+
+# Output: (empty - no content)
