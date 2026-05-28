@@ -172,6 +172,9 @@ class ClassSession(models.Model):
     hall = models.ForeignKey(Hall, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Зал")
     is_recurring = models.BooleanField("Повторять каждую неделю", default=False)
     recurrence_id = models.CharField("ID серии повторений", max_length=50, blank=True, db_index=True)
+    max_participants_override = models.PositiveIntegerField("Переопределение макс. участников", 
+                                                            null=True, blank=True,
+                                                            help_text="Если указано, переопределяет макс. количество участников из тарифа для этого занятия")
 
     class Meta:
         verbose_name = "Занятие"
@@ -189,6 +192,12 @@ class ClassSession(models.Model):
         if self.is_recurring and not self.recurrence_id:
             self.recurrence_id = str(uuid.uuid4())
         super().save(*args, **kwargs)
+    
+    def get_max_participants(self):
+        """Получить максимальное количество участников с учетом переопределения"""
+        if self.max_participants_override is not None:
+            return self.max_participants_override
+        return self.tariff.max_participants if self.tariff else 10
     
     def get_current_price(self):
         """Расчет текущей цены для записи с учетом заполненности (для сплита)"""

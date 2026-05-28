@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 import pytz
 from django.conf import settings
-from .models import ClassSession, Hall, ClassType, User, Attendance, UserDefaultSettings
+from .models import ClassSession, Hall, ClassType, User, Attendance, UserDefaultSettings, Tariff
 from .forms import RegistrationForm, LoginForm
 from .telegram_auth import validate_telegram_auth_data
 from .vk_auth import validate_vk_oauth_data
@@ -46,6 +46,7 @@ def calendar_view(request):
     """Отображение календаря занятий"""
     halls = Hall.objects.all()
     class_types = ClassType.objects.all()
+    tariffs = Tariff.objects.filter(is_active=True)
     
     # Проверяем права пользователя
     is_moderator = False
@@ -55,15 +56,15 @@ def calendar_view(request):
         # Проверяем суперадмина Django
         if request.user.is_superuser:
             is_admin = True
-        # Проверяем профиль клиента
-        elif hasattr(request.user, 'client_profile'):
-            client = request.user.client_profile
-            is_moderator = client.is_moderator
-            is_admin = client.is_admin
+        # Проверяем профиль клиента через роль
+        elif hasattr(request.user, 'role'):
+            is_moderator = request.user.role in ['moderator', 'admin']
+            is_admin = request.user.role == 'admin'
     
     return render(request, 'core/calendar.html', {
         'halls': halls,
         'class_types': class_types,
+        'tariffs': tariffs,
         'is_moderator': is_moderator,
         'is_admin': is_admin,
         'user_role': 'admin' if is_admin else ('moderator' if is_moderator else 'student'),
@@ -136,8 +137,8 @@ def get_events(request):
         # Время хранится как локальное (без timezone info), используем его напрямую
         local_dt = session.date_time
         
-        # Получаем max_participants из тарифа или устанавливаем по умолчанию
-        max_participants = session.tariff.max_participants if session.tariff else 10
+        # Получаем max_participants с учетом переопределения
+        max_participants = session.get_max_participants()
         
         events.append({
             'id': str(session.id),
@@ -165,11 +166,17 @@ def get_events(request):
 def create_event(request):
     """Создание нового занятия (только для модераторов и админов)"""
     # Проверка прав доступа
-    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+    if not request.user.is_authenticated:
         return JsonResponse({'error': 'Доступ запрещен'}, status=403)
     
-    client = request.user.client_profile
-    if not client.is_moderator:
+    # Проверяем суперадмина Django или администратора/модератора через профиль
+    is_authorized = False
+    if request.user.is_superuser or request.user.is_staff:
+        is_authorized = True
+    elif hasattr(request.user, 'role') and request.user.role in ['moderator', 'admin']:
+        is_authorized = True
+    
+    if not is_authorized:
         return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут создавать занятия'}, status=403)
     
     try:
@@ -178,7 +185,8 @@ def create_event(request):
         start = data.get('start')
         hall_id = data.get('hall_id')
         duration = data.get('duration')
-        max_participants = data.get('max_participants', 20)
+        tariff_id = data.get('tariff_id')
+        max_participants_override = data.get('max_participants_override')
         is_recurring = data.get('is_recurring', False)
         
         if not start:
@@ -202,13 +210,20 @@ def create_event(request):
         if hall_id:
             hall = get_object_or_404(Hall, id=hall_id)
         
+        tariff = None
+        if tariff_id:
+            tariff = get_object_or_404(Tariff, id=tariff_id)
+        elif class_type.default_tariff:
+            tariff = class_type.default_tariff
+        
         session = ClassSession.objects.create(
             class_type=class_type,
+            tariff=tariff,
             date_time=date_time,
             duration=duration,
             hall=hall,
-            max_participants=max_participants,
             is_recurring=is_recurring,
+            max_participants_override=max_participants_override if max_participants_override is not None else None,
         )
         
         # Если занятие повторяющееся, создаем события на 4 недели вперед
@@ -221,12 +236,13 @@ def create_event(request):
                 new_date = date_time + timedelta(weeks=week)
                 recurring_session = ClassSession.objects.create(
                     class_type=class_type,
+                    tariff=tariff,
                     date_time=new_date,
                     duration=duration,
                     hall=hall,
-                    max_participants=max_participants,
                     is_recurring=True,
                     recurrence_id=session.recurrence_id,
+                    max_participants_override=max_participants_override if max_participants_override is not None else None,
                 )
                 created_events.append({
                     'id': recurring_session.id,
@@ -250,11 +266,17 @@ def create_event(request):
 def update_event(request, event_id):
     """Обновление существующего занятия (только для модераторов и админов)"""
     # Проверка прав доступа
-    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+    if not request.user.is_authenticated:
         return JsonResponse({'error': 'Доступ запрещен'}, status=403)
     
-    client = request.user.client_profile
-    if not client.is_moderator:
+    # Проверяем суперадмина Django или администратора/модератора через профиль
+    is_authorized = False
+    if request.user.is_superuser or request.user.is_staff:
+        is_authorized = True
+    elif hasattr(request.user, 'role') and request.user.role in ['moderator', 'admin']:
+        is_authorized = True
+    
+    if not is_authorized:
         return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут редактировать занятия'}, status=403)
     
     try:
@@ -282,8 +304,13 @@ def update_event(request, event_id):
                 session.hall = get_object_or_404(Hall, id=data['hall_id'])
             else:
                 session.hall = None
-        if 'max_participants' in data:
-            session.max_participants = data['max_participants']
+        if 'tariff_id' in data:
+            if data['tariff_id']:
+                session.tariff = get_object_or_404(Tariff, id=data['tariff_id'])
+            else:
+                session.tariff = None
+        if 'max_participants_override' in data:
+            session.max_participants_override = data['max_participants_override'] if data['max_participants_override'] is not None else None
         
         session.save()
         
@@ -304,11 +331,17 @@ def update_event(request, event_id):
 def delete_event(request, event_id):
     """Удаление занятия (только для модераторов и админов)"""
     # Проверка прав доступа
-    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+    if not request.user.is_authenticated:
         return JsonResponse({'error': 'Доступ запрещен'}, status=403)
     
-    client = request.user.client_profile
-    if not client.is_moderator:
+    # Проверяем суперадмина Django или администратора/модератора через профиль
+    is_authorized = False
+    if request.user.is_superuser or request.user.is_staff:
+        is_authorized = True
+    elif hasattr(request.user, 'role') and request.user.role in ['moderator', 'admin']:
+        is_authorized = True
+    
+    if not is_authorized:
         return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут удалять занятия'}, status=403)
     
     try:
@@ -350,9 +383,9 @@ def get_attendance(request, session_id):
         # Проверка прав доступа
         is_moderator = False
         current_user_client_id = None
-        if request.user.is_authenticated and hasattr(request.user, 'client_profile'):
-            client = request.user.client_profile
-            is_moderator = client.is_moderator
+        if request.user.is_authenticated:
+            client = request.user
+            is_moderator = client.role in ['moderator', 'admin']
             current_user_client_id = client.id
         
         # Получаем всех клиентов, записанных на это занятие
@@ -360,22 +393,25 @@ def get_attendance(request, session_id):
         
         attendance_list = []
         for attendance in attendances:
-            client_user = attendance.client.user
+            client_user = attendance.client
             attendance_data = {
                 'id': attendance.id,
                 'client_id': attendance.client.id,
-                'client_name': f"{client_user.last_name if client_user else ''} {client_user.first_name if client_user else ''}".strip(),
+                'client_name': f"{client_user.last_name} {client_user.first_name}".strip(),
                 'client_phone': attendance.client.phone or '',
                 'attended': attendance.status == 'attended',
                 'is_current_user': attendance.client_id == current_user_client_id,
-                'max_participants': session.max_participants,
                 'role': attendance.client.role
             }
             attendance_list.append(attendance_data)
         
+        # Получаем max_participants с учетом переопределения
+        max_participants = session.get_max_participants()
+        
         return JsonResponse({
             'success': True,
             'attendances': attendance_list,
+            'max_participants': max_participants,
             'registered_count': len(attendance_list),
             'can_view_details': True
         })
@@ -387,11 +423,17 @@ def get_attendance(request, session_id):
 def update_attendance(request, session_id):
     """Обновление посещаемости для занятия (только для модераторов и админов)"""
     # Проверка прав доступа
-    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+    if not request.user.is_authenticated:
         return JsonResponse({'error': 'Доступ запрещен'}, status=403)
     
-    client = request.user.client_profile
-    if not client.is_moderator:
+    # Проверяем суперадмина Django или администратора/модератора через профиль
+    is_authorized = False
+    if request.user.is_superuser or request.user.is_staff:
+        is_authorized = True
+    elif hasattr(request.user, 'role') and request.user.role in ['moderator', 'admin']:
+        is_authorized = True
+    
+    if not is_authorized:
         return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут управлять посещаемостью'}, status=403)
     
     try:
@@ -429,10 +471,15 @@ def update_attendance(request, session_id):
 def enroll_to_class(request, session_id):
     """Запись пользователя на занятие"""
     # Проверка прав доступа
-    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+    if not request.user.is_authenticated:
         return JsonResponse({'error': 'Доступ запрещен. Требуется авторизация'}, status=403)
     
-    client = request.user.client_profile
+    # Для записи на занятие нужен профиль клиента (ученик или модератор/админ)
+    # Проверяем, что пользователь имеет подходящую роль
+    if not hasattr(request.user, 'role') or request.user.role not in ['student', 'moderator', 'admin']:
+        return JsonResponse({'error': 'Доступ запрещен. Требуется профиль клиента'}, status=403)
+    
+    client = request.user
     
     try:
         session = get_object_or_404(ClassSession, id=session_id)
@@ -452,7 +499,8 @@ def enroll_to_class(request, session_id):
         
         # Проверяем наличие свободных мест
         current_count = Attendance.objects.filter(session=session).count()
-        if current_count >= session.max_participants:
+        max_participants = session.get_max_participants()
+        if current_count >= max_participants:
             return JsonResponse({'error': 'Нет свободных мест'}, status=400)
         
         # Создаем запись о посещении
@@ -471,10 +519,15 @@ def enroll_to_class(request, session_id):
 def cancel_enrollment(request, session_id):
     """Отмена записи пользователя на занятие"""
     # Проверка прав доступа
-    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+    if not request.user.is_authenticated:
         return JsonResponse({'error': 'Доступ запрещен. Требуется авторизация'}, status=403)
     
-    client = request.user.client_profile
+    # Для отмены записи нужен профиль клиента (ученик или модератор/админ)
+    # Проверяем, что пользователь имеет подходящую роль
+    if not hasattr(request.user, 'role') or request.user.role not in ['student', 'moderator', 'admin']:
+        return JsonResponse({'error': 'Доступ запрещен. Требуется профиль клиента'}, status=403)
+    
+    client = request.user
     
     try:
         session = get_object_or_404(ClassSession, id=session_id)
@@ -504,11 +557,18 @@ def cancel_enrollment(request, session_id):
 def add_client_to_session(request, session_id):
     """Добавление клиента на занятие вручную (только для модераторов и админов)"""
     # Проверка прав доступа
-    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+    if not request.user.is_authenticated:
         return JsonResponse({'error': 'Доступ запрещен'}, status=403)
     
-    client = request.user.client_profile
-    if not client.is_moderator:
+    # Проверяем суперадмина Django или администратора/модератора через профиль
+    is_authorized = False
+    if request.user.is_superuser or request.user.is_staff:
+        is_authorized = True
+    elif hasattr(request.user, 'client_profile'):
+        client = request.user.client_profile
+        is_authorized = client.is_moderator
+    
+    if not is_authorized:
         return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут добавлять клиентов на занятия'}, status=403)
     
     try:
@@ -551,12 +611,14 @@ def add_client_to_session(request, session_id):
 def search_clients(request):
     """Поиск клиентов по имени/фамилии/телефону (только для модераторов и админов)"""
     # Проверка прав доступа
-    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+    if not request.user.is_authenticated:
         return JsonResponse({'error': 'Доступ запрещен'}, status=403)
     
-    client = request.user.client_profile
-    if not client.is_moderator:
+    # Проверяем, что пользователь является модератором или администратором
+    if not hasattr(request.user, 'role') or request.user.role not in ['moderator', 'admin']:
         return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут искать клиентов'}, status=403)
+    
+    client = request.user
     
     try:
         query = request.GET.get('q', '')
@@ -566,17 +628,16 @@ def search_clients(request):
         
         # Ищем по фамилии, имени или телефону
         clients = User.objects.filter(
-            Q(user__first_name__icontains=query) |
-            Q(user__last_name__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
             Q(phone__icontains=query)
         ).filter(is_active=True)[:10]  # Ограничиваем до 10 результатов
         
         client_list = []
         for client in clients:
-            user = client.user
             client_list.append({
                 'id': client.id,
-                'name': f"{user.last_name if user else ''} {user.first_name if user else ''}".strip(),
+                'name': f"{client.last_name} {client.first_name}".strip(),
                 'phone': client.phone or '',
                 'role': client.role
             })

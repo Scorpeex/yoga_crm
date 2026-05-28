@@ -52,6 +52,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Клик по дате - создание нового события
         select: function(info) {
+            // Определяем роль пользователя
+            const userRole = window.USER_ROLE || 'student';
+            const isStaff = userRole === 'admin' || userRole === 'moderator';
+            
+            // Для обычных пользователей запрещаем создание событий
+            if (!isStaff) {
+                calendar.unselect(); // Снимаем выделение
+                return;
+            }
+            
             // При явном выборе времени используем локальную дату без конвертации
             // info.start теперь в локальном времени браузера (без timeZone конвертации)
             const localStart = info.start;
@@ -64,8 +74,14 @@ document.addEventListener('DOMContentLoaded', function() {
             openModal(null, selectedDateFromClick);
         },
         
-        // Клик по событию - редактирование
+        // Клик по событию - редактирование/запись
         eventClick: function(info) {
+            // Определяем роль пользователя
+            const userRole = window.USER_ROLE || 'student';
+            const isStaff = userRole === 'admin' || userRole === 'moderator';
+            
+            // Для обычных пользователей открываем только вкладку записи
+            // Модальное окно откроется в openModal с правильной логикой
             openModal(info.event);
         },
         
@@ -149,6 +165,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const duration = selectedOption.getAttribute('data-duration');
         if (duration) {
             document.getElementById('eventDuration').value = duration;
+        }
+    });
+    
+    // Обработчик для выбора тарифа - обновляет max_participants автоматически
+    document.getElementById('eventTariff').addEventListener('change', function() {
+        const selectedOption = this.selectedOptions[0];
+        const maxParticipants = selectedOption.dataset.maxParticipants;
+        if (maxParticipants) {
+            document.getElementById('eventMaxParticipants').value = maxParticipants;
+            // Обновляем состояние кнопок
+            window.updateCapacityButtons(maxParticipants);
         }
     });
     
@@ -335,8 +362,10 @@ function openModal(event, startStr) {
         }
         
         document.getElementById('eventDuration').value = 60;
-        document.getElementById('eventMaxParticipants').value = 20;
-        updateCapacityButtons(20);
+        // При создании нового события сбрасываем тариф и max_participants
+        document.getElementById('eventTariff').value = '';
+        document.getElementById('eventMaxParticipants').value = 10;
+        updateCapacityButtons(10);
         document.getElementById('eventHall').value = '';
         document.getElementById('eventRecurring').checked = false;
         deleteBtn.removeAttribute('data-is-recurring');
@@ -411,12 +440,18 @@ function saveEvent() {
     const minute = document.getElementById('startMinute').value;
     const timeValue = `${hour}:${minute}`;
     
+    // Получаем tariff_id и max_participants_override из формы
+    const tariffSelect = document.getElementById('eventTariff');
+    const tariffId = tariffSelect.value ? parseInt(tariffSelect.value) : null;
+    const maxParticipantsOverride = parseInt(document.getElementById('eventMaxParticipants').value) || null;
+    
     const data = {
         class_type_id: parseInt(document.getElementById('eventClassType').value),
         start: timeValue,
         duration: parseInt(document.getElementById('eventDuration').value),
         hall_id: document.getElementById('eventHall').value || null,
-        max_participants: parseInt(document.getElementById('eventMaxParticipants').value),
+        tariff_id: tariffId,
+        max_participants_override: maxParticipantsOverride,
         is_recurring: document.getElementById('eventRecurring').checked,
     };
     
@@ -618,6 +653,8 @@ function loadAttendance(sessionId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                // Сохраняем max_participants в глобальной переменной
+                window.currentMaxParticipants = data.max_participants || 10;
                 renderAttendanceList(data.attendances);
             } else {
                 attendanceContent.innerHTML = `<p style="color: red;">Ошибка: ${data.error}</p>`;
@@ -633,6 +670,10 @@ function renderAttendanceList(attendances, forStudent = false) {
     const attendanceContent = document.getElementById('attendanceContent');
     const userRole = window.USER_ROLE || 'student';
     const isStaff = userRole === 'admin' || userRole === 'moderator';
+    
+    // Получаем max_participants из ответа API (глобальная переменная)
+    const maxParticipants = window.currentMaxParticipants || 10;
+    const freeSlots = maxParticipants - attendances.length;
     
     let html = '';
     
@@ -662,8 +703,6 @@ function renderAttendanceList(attendances, forStudent = false) {
     html += '</div>';
     
     // Информация о свободных местах
-    const maxParticipants = attendances.length > 0 ? attendances[0].max_participants || 20 : 20;
-    const freeSlots = maxParticipants - attendances.length;
     html += `<div style="margin: 15px 0; padding: 10px; background-color: #f0f8ff; border-radius: 5px;">
         <strong>Свободные места:</strong> ${freeSlots} из ${maxParticipants}
     </div>`;
@@ -867,6 +906,8 @@ function loadAttendanceForStudent(sessionId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                // Сохраняем max_participants в глобальной переменной
+                window.currentMaxParticipants = data.max_participants || 10;
                 renderAttendanceList(data.attendances, true);
             } else {
                 attendanceContent.innerHTML = `<p style="color: red;">Ошибка: ${data.error}</p>`;
