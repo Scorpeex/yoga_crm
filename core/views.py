@@ -504,28 +504,11 @@ def enroll_to_class(request, session_id):
         if current_count >= max_participants:
             return JsonResponse({'error': 'Нет свободных мест'}, status=400)
         
-        # Проверяем возможность записи (баланс или абонемент)
-        can_book, message = PaymentService.can_book_session(client, session)
-        if not can_book:
-            return JsonResponse({'error': message}, status=400)
-        
-        # Создаем запись
-        booking = Booking.objects.create(
-            session=session,
-            client=client,
-            status='confirmed',
-            amount_paid=session.get_current_price()
-        )
-        
-        # Если есть активный абонемент для этого тарифа - используем его
-        active_subscription = Subscription.objects.filter(
-            client=client,
-            tariff=session.tariff,
-            status='active'
-        ).first()
-        
-        if active_subscription and active_subscription.is_valid():
-            PaymentService.use_subscription_for_booking(booking, active_subscription)
+        # Создаем запись с мгновенным списанием средств (абонемент или баланс)
+        try:
+            booking = PaymentService.create_booking(client, session)
+        except ValueError as e:
+            return JsonResponse({'error': str(e)}, status=400)
         
         return JsonResponse({'success': True})
     except Exception as e:
@@ -602,28 +585,11 @@ def add_client_to_session(request, session_id):
         if existing:
             return JsonResponse({'error': 'Клиент уже записан на это занятие'}, status=400)
         
-        # Проверяем возможность записи (баланс или абонемент)
-        can_book, message = PaymentService.can_book_session(client, session)
-        if not can_book:
-            return JsonResponse({'error': message}, status=400)
-        
-        # Создаем запись
-        booking = Booking.objects.create(
-            session=session,
-            client=client,
-            status='confirmed',
-            amount_paid=session.get_current_price()
-        )
-        
-        # Если есть активный абонемент для этого тарифа - используем его
-        active_subscription = Subscription.objects.filter(
-            client=client,
-            tariff=session.tariff,
-            status='active'
-        ).first()
-        
-        if active_subscription and active_subscription.is_valid():
-            PaymentService.use_subscription_for_booking(booking, active_subscription)
+        # Создаем запись с мгновенным списанием средств (абонемент или баланс)
+        try:
+            booking = PaymentService.create_booking(client, session)
+        except ValueError as e:
+            return JsonResponse({'error': str(e)}, status=400)
         
         return JsonResponse({
             'success': True,
