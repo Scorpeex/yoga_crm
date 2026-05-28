@@ -771,17 +771,33 @@ def profile_view(request):
     
     # Получаем будущие занятия, на которые записан клиент
     upcoming_sessions = ClassSession.objects.filter(
-        attendance__client=client,
-        date_time__gte=timezone.now(),
-        attendance__status='attended'
-    ).select_related('class_type', 'hall').order_by('date_time')[:10]
+        bookings__client=client,
+        bookings__status__in=['confirmed', 'paid'],
+        date_time__gte=timezone.now()
+    ).select_related('class_type', 'hall', 'bookings').order_by('date_time')[:10]
     
     # Получаем историю посещений
     past_sessions = ClassSession.objects.filter(
-        attendance__client=client,
-        date_time__lt=timezone.now(),
-        attendance__status='attended'
-    ).select_related('class_type', 'hall').order_by('-date_time')[:20]
+        bookings__client=client,
+        bookings__status__in=['paid'],
+        date_time__lt=timezone.now()
+    ).select_related('class_type', 'hall', 'bookings').order_by('-date_time')[:20]
+    
+    # Получаем активные абонементы клиента
+    active_subscriptions = Subscription.objects.filter(
+        client=client,
+        status='active'
+    ).select_related('tariff').order_by('-purchased_at')
+    
+    # Рассчитываем общий остаток занятий по всем активным абонементам
+    subscription_remaining = sum(sub.sessions_remaining for sub in active_subscriptions)
+    
+    # Получаем доступные тарифы клиента с поддержкой абонементов
+    available_tariffs_with_subscriptions = Tariff.objects.filter(
+        id__in=client.allowed_tariffs.all(),
+        is_subscription_available=True,
+        is_active=True
+    ).annotate()
     
     context = {
         'client': client,
@@ -791,6 +807,9 @@ def profile_view(request):
         'is_moderator': client.is_moderator,
         'is_admin': client.is_admin,
         'is_staff': client.is_staff,
+        'active_subscriptions': active_subscriptions,
+        'subscription_remaining': subscription_remaining,
+        'available_tariffs_with_subscriptions': available_tariffs_with_subscriptions,
     }
     return render(request, 'core/profile.html', context)
 
@@ -1016,3 +1035,48 @@ def vk_auth(request):
         }, status=500)
 
 
+
+
+@login_required
+@require_http_methods(["POST"])
+def purchase_subscription_view(request):
+    """
+    Покупка абонемента пользователем в личном кабинете
+    """
+    client = request.user
+    
+    try:
+        data = json.loads(request.body)
+        tariff_id = data.get('tariff_id')
+        
+        if not tariff_id:
+            return JsonResponse({'error': 'ID тарифа обязателен'}, status=400)
+        
+        tariff = get_object_or_404(Tariff, id=tariff_id)
+        
+        # Проверяем, доступен ли абонемент для этого тарифа
+        if not tariff.is_subscription_available:
+            return JsonResponse({'error': 'Для этого тарифа недоступны абонементы'}, status=400)
+        
+        # Проверяем, есть ли у пользователя доступ к этому тарифу
+        if tariff not in client.allowed_tariffs.all():
+            return JsonResponse({'error': 'У вас нет доступа к этому тарифу'}, status=403)
+        
+        # Покупаем абонемент через сервис
+        subscription = PaymentService.purchase_subscription(client, tariff)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Абонемент "{tariff.name}" успешно приобретен',
+            'subscription': {
+                'id': subscription.id,
+                'tariff_name': tariff.name,
+                'sessions_total': subscription.sessions_total,
+                'sessions_remaining': subscription.sessions_remaining,
+                'expires_at': subscription.expires_at.strftime('%d.%m.%Y') if subscription.expires_at else None,
+            }
+        })
+    except ValueError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
