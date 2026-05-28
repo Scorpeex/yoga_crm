@@ -628,6 +628,8 @@ function loadAttendance(sessionId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                // Сохраняем max_participants в глобальной переменной
+                window.currentMaxParticipants = data.max_participants || 10;
                 renderAttendanceList(data.attendances);
             } else {
                 attendanceContent.innerHTML = `<p style="color: red;">Ошибка: ${data.error}</p>`;
@@ -643,6 +645,10 @@ function renderAttendanceList(attendances, forStudent = false) {
     const attendanceContent = document.getElementById('attendanceContent');
     const userRole = window.USER_ROLE || 'student';
     const isStaff = userRole === 'admin' || userRole === 'moderator';
+    
+    // Получаем max_participants из ответа API (глобальная переменная)
+    const maxParticipants = window.currentMaxParticipants || 10;
+    const freeSlots = maxParticipants - attendances.length;
     
     let html = '';
     
@@ -672,8 +678,6 @@ function renderAttendanceList(attendances, forStudent = false) {
     html += '</div>';
     
     // Информация о свободных местах
-    const maxParticipants = attendances.length > 0 ? attendances[0].max_participants || 20 : 20;
-    const freeSlots = maxParticipants - attendances.length;
     html += `<div style="margin: 15px 0; padding: 10px; background-color: #f0f8ff; border-radius: 5px;">
         <strong>Свободные места:</strong> ${freeSlots} из ${maxParticipants}
     </div>`;
@@ -877,6 +881,8 @@ function loadAttendanceForStudent(sessionId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                // Сохраняем max_participants в глобальной переменной
+                window.currentMaxParticipants = data.max_participants || 10;
                 renderAttendanceList(data.attendances, true);
             } else {
                 attendanceContent.innerHTML = `<p style="color: red;">Ошибка: ${data.error}</p>`;

@@ -394,14 +394,17 @@ def get_attendance(request, session_id):
                 'client_phone': attendance.client.phone or '',
                 'attended': attendance.status == 'attended',
                 'is_current_user': attendance.client_id == current_user_client_id,
-                'max_participants': session.tariff.max_participants if session.tariff else 10,
                 'role': attendance.client.role
             }
             attendance_list.append(attendance_data)
         
+        # Получаем max_participants из тарифа занятия
+        max_participants = session.tariff.max_participants if session.tariff else 10
+        
         return JsonResponse({
             'success': True,
             'attendances': attendance_list,
+            'max_participants': max_participants,
             'registered_count': len(attendance_list),
             'can_view_details': True
         })
