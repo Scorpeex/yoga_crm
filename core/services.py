@@ -1,5 +1,6 @@
 """
 Сервис для обработки платежей и списания средств за занятия
+Теперь списание происходит мгновенно при записи на занятие
 """
 
 from django.utils import timezone
@@ -12,50 +13,24 @@ class PaymentService:
     """Сервис для управления платежами и списаниями"""
     
     @staticmethod
-    def process_payment_deadlines():
+    def charge_booking_immediately(booking, session):
         """
-        Обработка дедлайнов оплаты - списание средств за 4 часа до занятия
-        Вызывается периодически (например, через cron или celery beat)
-        """
-        now = timezone.now()
-        
-        # Находим все подтвержденные записи, у которых наступил дедлайн оплаты
-        # и которые еще не оплачены
-        bookings_to_charge = Booking.objects.filter(
-            status='confirmed',
-            payment_deadline__lte=now,
-            paid_at__isnull=True,
-            is_subscription_used=False  # Исключаем записи, оплаченные абонементом
-        ).select_related('session', 'client', 'session__tariff')
-        
-        charged_count = 0
-        failed_count = 0
-        
-        for booking in bookings_to_charge:
-            try:
-                PaymentService.charge_booking(booking)
-                charged_count += 1
-            except Exception as e:
-                print(f"Ошибка списания для записи {booking.id}: {e}")
-                failed_count += 1
-                # Помечаем запись как проблемную
-                booking.status = 'pending'
-                booking.save()
-        
-        return {
-            'charged': charged_count,
-            'failed': failed_count,
-            'total': bookings_to_charge.count()
-        }
-    
-    @staticmethod
-    def charge_booking(booking):
-        """
-        Списание средств за конкретную запись
+        Мгновенное списание средств за запись на занятие
+        Сначала пытается использовать абонемент, затем списывает с баланса
         """
         client = booking.client
-        session = booking.session
         amount = session.get_current_price()
+        
+        # Проверяем, есть ли действующий абонемент для этого тарифа
+        active_subscription = Subscription.objects.filter(
+            client=client,
+            tariff=session.tariff,
+            status='active'
+        ).first()
+        
+        if active_subscription and active_subscription.is_valid():
+            # Используем абонемент
+            return PaymentService.use_subscription_for_booking(booking, active_subscription)
         
         # Проверяем баланс
         if client.balance < amount:
@@ -339,9 +314,10 @@ class PaymentService:
         return True, "OK"
     
     @staticmethod
-    def create_booking(user, session, comment="", use_subscription=False):
+    def create_booking(user, session, comment=""):
         """
-        Создание записи на занятие
+        Создание записи на занятие с мгновенным списанием средств
+        Сначала пытается использовать абонемент, затем списывает с баланса
         """
         # Проверяем возможность записи
         can_book, message = PaymentService.can_book_session(user, session)
@@ -349,24 +325,21 @@ class PaymentService:
         if not can_book:
             raise ValueError(message)
         
-        # Создаем запись
+        # Создаем запись со статусом 'confirmed' (временный статус до оплаты)
         booking = Booking.objects.create(
             session=session,
             client=user,
-            status='confirmed',  # Можно изменить на 'pending' если нужно подтверждение
+            status='confirmed',
             comment=comment,
             amount_paid=session.get_current_price()
         )
         
-        # Если запрошено использование абонемента - используем его
-        if use_subscription:
-            active_subscription = Subscription.objects.filter(
-                client=user,
-                tariff=session.tariff,
-                status='active'
-            ).first()
-            
-            if active_subscription and active_subscription.is_valid():
-                PaymentService.use_subscription_for_booking(booking, active_subscription)
+        # Мгновенно списываем средства или используем абонемент
+        try:
+            PaymentService.charge_booking_immediately(booking, session)
+        except Exception as e:
+            # Если не удалось списать средства - удаляем запись и выбрасываем ошибку
+            booking.delete()
+            raise ValueError(str(e))
         
         return booking

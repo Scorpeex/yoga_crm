@@ -25,8 +25,18 @@
             </div>
             <div class="balance-item">
                 <span class="balance-label">Остаток абонемента:</span>
-                <span class="balance-value">{{ client.subscription_remaining|default:"0" }} занятий</span>
+                <span class="balance-value">{{ subscription_remaining|default:"0" }} занятий</span>
             </div>
+            {% if active_subscriptions %}
+            <div class="balance-item">
+                <span class="balance-label">Активные абонементы:</span>
+                <ul class="subscriptions-list">
+                    {% for sub in active_subscriptions %}
+                    <li>{{ sub.tariff.name }}: {{ sub.sessions_remaining }}/{{ sub.sessions_total }} (до {{ sub.expires_at|date:"d.m.Y" }})</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
             <div class="balance-item">
                 <a href="{% url 'calendar' %}" class="btn btn-secondary btn-small">Перейти к расписанию</a>
             </div>
@@ -94,9 +104,266 @@
         </section>
     </div>
     
+    <!-- Доступные абонементы для покупки -->
+    {% if available_tariffs_with_subscriptions %}
+    <div class="profile-section">
+        <h2>Доступные абонементы</h2>
+        <p class="section-description">Выберите абонемент для покупки. Стоимость спишется с вашего баланса.</p>
+        <div class="subscriptions-grid">
+            {% for tariff in available_tariffs_with_subscriptions %}
+            <div class="subscription-card">
+                <h3>{{ tariff.name }}</h3>
+                <p class="subscription-details">{{ tariff.subscription_sessions_count }} занятий</p>
+                <p class="subscription-validity">Срок действия: {{ tariff.subscription_validity_days }} дн.</p>
+                <p class="subscription-price">{{ tariff.subscription_price }} ₽</p>
+                <button class="btn btn-primary purchase-subscription-btn" data-tariff-id="{{ tariff.id }}" data-tariff-name="{{ tariff.name }}" data-price="{{ tariff.subscription_price }}">
+                    Купить абонемент
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
     <div class="profile-actions">
         <a href="{% url 'calendar' %}" class="btn btn-secondary">Перейти к расписанию</a>
         <a href="{% url 'logout' %}" class="btn btn-outline">Выйти</a>
     </div>
 </div>
+
+<!-- Модальное окно подтверждения покупки абонемента -->
+<div id="purchaseModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2>Подтверждение покупки абонемента</h2>
+        <div class="purchase-details">
+            <p><strong>Абонемент:</strong> <span id="modalTariffName"></span></p>
+            <p><strong>Количество занятий:</strong> <span id="modalSessionsCount"></span></p>
+            <p><strong>Стоимость:</strong> <span id="modalPrice"></span> ₽</p>
+            <p><strong>Ваш баланс:</strong> <span id="modalBalance">{{ client.balance }}</span> ₽</p>
+            <p id="modalWarning" class="warning-message" style="display: none; color: #dc3545;">Недостаточно средств на балансе!</p>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-outline cancel-purchase">Отмена</button>
+            <button class="btn btn-primary confirm-purchase" id="confirmPurchaseBtn">Купить</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('purchaseModal');
+    const closeModal = modal.querySelector('.close-modal');
+    const purchaseButtons = document.querySelectorAll('.purchase-subscription-btn');
+    const cancelButtons = document.querySelectorAll('.cancel-purchase');
+    const confirmPurchaseBtn = document.getElementById('confirmPurchaseBtn');
+    
+    let selectedTariffId = null;
+    
+    // Открытие модального окна при клике на кнопку покупки
+    purchaseButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            selectedTariffId = this.dataset.tariffId;
+            const tariffName = this.dataset.tariffName;
+            const price = parseFloat(this.dataset.price);
+            const balance = parseFloat('{{ client.balance|default:"0" }}');
+            
+            document.getElementById('modalTariffName').textContent = tariffName;
+            document.getElementById('modalPrice').textContent = price;
+            document.getElementById('modalBalance').textContent = balance;
+            
+            // Проверка достаточности средств
+            const warningMessage = document.getElementById('modalWarning');
+            const confirmBtn = document.getElementById('confirmPurchaseBtn');
+            
+            if (balance < price) {
+                warningMessage.style.display = 'block';
+                confirmBtn.disabled = true;
+            } else {
+                warningMessage.style.display = 'none';
+                confirmBtn.disabled = false;
+            }
+            
+            modal.style.display = 'flex';
+        });
+    });
+    
+    // Закрытие модального окна
+    function closeModalFunc() {
+        modal.style.display = 'none';
+        selectedTariffId = null;
+    }
+    
+    closeModal.addEventListener('click', closeModalFunc);
+    cancelButtons.forEach(button => {
+        button.addEventListener('click', closeModalFunc);
+    });
+    
+    // Закрытие по клику вне модального окна
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            closeModalFunc();
+        }
+    });
+    
+    // Подтверждение покупки
+    confirmPurchaseBtn.addEventListener('click', function() {
+        if (!selectedTariffId) return;
+        
+        fetch('/api/purchase-subscription/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ tariff_id: selectedTariffId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload(); // Перезагрузка страницы для обновления данных
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при покупке абонемента');
+        });
+    });
+});
+</script>
+
+<style>
+.subscriptions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.subscription-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.subscription-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.subscription-card h3 {
+    margin: 0 0 12px;
+    color: #333;
+    font-size: 1.3rem;
+}
+
+.subscription-details {
+    color: #666;
+    margin: 8px 0;
+    font-size: 1.1rem;
+}
+
+.subscription-validity {
+    color: #888;
+    font-size: 0.9rem;
+    margin: 8px 0;
+}
+
+.subscription-price {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #4ECDC4;
+    margin: 16px 0;
+}
+
+.purchase-subscription-btn {
+    width: 100%;
+    padding: 12px 24px;
+    font-size: 1rem;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.close-modal {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    font-size: 28px;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.2s;
+}
+
+.close-modal:hover {
+    color: #333;
+}
+
+.purchase-details {
+    margin: 24px 0;
+}
+
+.purchase-details p {
+    margin: 12px 0;
+    font-size: 1.1rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+.modal-actions button {
+    min-width: 120px;
+}
+
+.section-description {
+    color: #666;
+    margin-bottom: 16px;
+}
+
+.subscriptions-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+}
+
+.subscriptions-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.95rem;
+}
+
+.subscriptions-list li:last-child {
+    border-bottom: none;
+}
+</style>
 {% endblock %}

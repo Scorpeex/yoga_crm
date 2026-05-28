@@ -166,7 +166,7 @@ class ClassSession(models.Model):
     """Модель занятия"""
     class_type = models.ForeignKey(ClassType, on_delete=models.CASCADE, verbose_name="Занятие")
     tariff = models.ForeignKey(Tariff, on_delete=models.PROTECT, verbose_name="Тариф",
-                               help_text="Тариф для этого занятия")
+                               help_text="Тариф для этого занятия", null=True, blank=True)
     date_time = models.DateTimeField("Дата и время")
     duration = models.PositiveIntegerField("Длительность (мин)", default=60)
     hall = models.ForeignKey(Hall, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Зал")
@@ -232,7 +232,7 @@ class Booking(models.Model):
     status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default='pending')
     booked_at = models.DateTimeField("Дата записи", auto_now_add=True)
     payment_deadline = models.DateTimeField("Дедлайн оплаты", null=True, blank=True,
-                                            help_text="Время, до которого нужно оплатить (за 4 часа до занятия)")
+                                            help_text="Время, до которого нужно оплатить (за 3 часа 50 минут до занятия)")
     paid_at = models.DateTimeField("Дата оплаты", null=True, blank=True)
     amount_paid = models.DecimalField("Сумма оплаты", max_digits=10, decimal_places=2, default=0)
     comment = models.TextField("Комментарий", blank=True)
@@ -254,9 +254,9 @@ class Booking(models.Model):
         return f"{self.client} -> {self.session} ({self.get_status_display()})"
     
     def save(self, *args, **kwargs):
-        # Автоматически устанавливаем дедлайн оплаты (за 4 часа до занятия)
+        # Автоматически устанавливаем дедлайн оплаты (за 3 часа 50 минут до занятия)
         if not self.payment_deadline and self.session:
-            self.payment_deadline = self.session.date_time - timedelta(hours=4)
+            self.payment_deadline = self.session.date_time - timedelta(hours=3, minutes=50)
         super().save(*args, **kwargs)
 
 

@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/calendar/events/<int:session_id>/enroll/', views.enroll_to_class, name='enroll_to_class'),
     path('api/calendar/events/<int:session_id>/cancel-enrollment/', views.cancel_enrollment, name='cancel_enrollment'),
     path('api/clients/search/', views.search_clients, name='search_clients'),
+    path('api/purchase-subscription/', views.purchase_subscription_view, name='purchase_subscription'),
     
     # Аутентификация и личный кабинет
     path('register/', views.register_view, name='register'),
