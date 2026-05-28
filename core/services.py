@@ -14,7 +14,7 @@ class PaymentService:
     @staticmethod
     def process_payment_deadlines():
         """
-        Обработка дедлайнов оплаты - списание средств за 4 часа до занятия
+        Обработка дедлайнов оплаты - списание средств за 3 часа 50 минут до занятия
         Вызывается периодически (например, через cron или celery beat)
         """
         now = timezone.now()

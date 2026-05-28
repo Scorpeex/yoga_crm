@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 import pytz
 from django.conf import settings
-from .models import ClassSession, Hall, ClassType, User, Attendance, UserDefaultSettings, Tariff
+from .models import ClassSession, Hall, ClassType, User, Attendance, UserDefaultSettings, Tariff, Booking, Subscription
+from .services import PaymentService
 from .forms import RegistrationForm, LoginForm
 from .telegram_auth import validate_telegram_auth_data
 from .vk_auth import validate_vk_oauth_data
@@ -378,7 +379,7 @@ def delete_event(request, event_id):
 
 @require_http_methods(["GET"])
 def get_attendance(request, session_id):
-    """Получение списка посещаемости для занятия"""
+    """Получение списка записей на занятие"""
     try:
         session = get_object_or_404(ClassSession, id=session_id)
         
@@ -391,19 +392,21 @@ def get_attendance(request, session_id):
             current_user_client_id = client.id
         
         # Получаем всех клиентов, записанных на это занятие
-        attendances = Attendance.objects.filter(session=session).select_related('client')
+        bookings = Booking.objects.filter(session=session).select_related('client')
         
         attendance_list = []
-        for attendance in attendances:
-            client_user = attendance.client
+        for booking in bookings:
+            client_user = booking.client
             attendance_data = {
-                'id': attendance.id,
-                'client_id': attendance.client.id,
+                'id': booking.id,
+                'client_id': booking.client.id,
                 'client_name': f"{client_user.last_name} {client_user.first_name}".strip(),
-                'client_phone': attendance.client.phone or '',
-                'attended': attendance.status == 'attended',
-                'is_current_user': attendance.client_id == current_user_client_id,
-                'role': attendance.client.role
+                'client_phone': booking.client.phone or '',
+                'attended': booking.status in ['paid', 'confirmed'],
+                'is_current_user': booking.client_id == current_user_client_id,
+                'role': booking.client.role,
+                'status': booking.status,
+                'is_subscription_used': booking.is_subscription_used
             }
             attendance_list.append(attendance_data)
         
@@ -445,24 +448,20 @@ def update_attendance(request, session_id):
         # attended_client_ids - список ID клиентов, которые посетили занятие
         attended_client_ids = data.get('attended_clients', [])
         
-        # Обновляем или создаем записи о посещении
+        # Обновляем статус записей для клиентов, которые посетили занятие
         for client_id in attended_client_ids:
             client = get_object_or_404(User, id=client_id)
-            attendance, created = Attendance.objects.get_or_create(
-                session=session,
-                client=client,
-                defaults={'status': 'attended'}
-            )
-            if not created:
-                attendance.status = 'attended'
-                attendance.save()
+            booking = Booking.objects.filter(session=session, client=client).first()
+            if booking:
+                booking.status = 'paid'  # Помечаем как оплаченное/посещенное
+                booking.save()
         
         # Для клиентов, которые были записаны, но не отмечены - ставим статус no_show
-        all_attendances = Attendance.objects.filter(session=session)
-        for attendance in all_attendances:
-            if attendance.client_id not in attended_client_ids:
-                attendance.status = 'no_show'
-                attendance.save()
+        all_bookings = Booking.objects.filter(session=session)
+        for booking in all_bookings:
+            if booking.client_id not in attended_client_ids:
+                booking.status = 'no_show'
+                booking.save()
         
         return JsonResponse({'success': True})
     except Exception as e:
@@ -486,7 +485,7 @@ def enroll_to_class(request, session_id):
     try:
         session = get_object_or_404(ClassSession, id=session_id)
         
-        # Проверяем время до занятия (не менее 4 часов)
+        # Проверяем время до занятия (не менее 4 часов для отмены)
         # При USE_TZ = False используем naive datetime для сравнения
         now = datetime.now()
         session_time = session.date_time
@@ -495,22 +494,38 @@ def enroll_to_class(request, session_id):
             return JsonResponse({'error': 'Запись возможна не позднее чем за 4 часа до начала занятия'}, status=400)
         
         # Проверяем, не записан ли уже клиент
-        existing = Attendance.objects.filter(session=session, client=client).first()
-        if existing:
+        existing_booking = Booking.objects.filter(session=session, client=client).first()
+        if existing_booking:
             return JsonResponse({'error': 'Вы уже записаны на это занятие'}, status=400)
         
         # Проверяем наличие свободных мест
-        current_count = Attendance.objects.filter(session=session).count()
+        current_count = Booking.objects.filter(session=session, status__in=['confirmed', 'paid']).count()
         max_participants = session.get_max_participants()
         if current_count >= max_participants:
             return JsonResponse({'error': 'Нет свободных мест'}, status=400)
         
-        # Создаем запись о посещении
-        Attendance.objects.create(
+        # Проверяем возможность записи (баланс или абонемент)
+        can_book, message = PaymentService.can_book_session(client, session)
+        if not can_book:
+            return JsonResponse({'error': message}, status=400)
+        
+        # Создаем запись
+        booking = Booking.objects.create(
             session=session,
             client=client,
-            status='attended'
+            status='confirmed',
+            amount_paid=session.get_current_price()
         )
+        
+        # Если есть активный абонемент для этого тарифа - используем его
+        active_subscription = Subscription.objects.filter(
+            client=client,
+            tariff=session.tariff,
+            status='active'
+        ).first()
+        
+        if active_subscription and active_subscription.is_valid():
+            PaymentService.use_subscription_for_booking(booking, active_subscription)
         
         return JsonResponse({'success': True})
     except Exception as e:
@@ -543,12 +558,12 @@ def cancel_enrollment(request, session_id):
             return JsonResponse({'error': 'Отмена записи возможна не позднее чем за 4 часа до начала занятия'}, status=400)
         
         # Находим запись
-        attendance = Attendance.objects.filter(session=session, client=client).first()
-        if not attendance:
+        booking = Booking.objects.filter(session=session, client=client).first()
+        if not booking:
             return JsonResponse({'error': 'Вы не записаны на это занятие'}, status=400)
         
-        # Удаляем запись
-        attendance.delete()
+        # Отменяем запись через сервис
+        PaymentService.cancel_booking(booking, by_admin=False)
         
         return JsonResponse({'success': True})
     except Exception as e:
@@ -566,9 +581,8 @@ def add_client_to_session(request, session_id):
     is_authorized = False
     if request.user.is_superuser or request.user.is_staff:
         is_authorized = True
-    elif hasattr(request.user, 'client_profile'):
-        client = request.user.client_profile
-        is_authorized = client.is_moderator
+    elif hasattr(request.user, 'role') and request.user.role in ['moderator', 'admin']:
+        is_authorized = True
     
     if not is_authorized:
         return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут добавлять клиентов на занятия'}, status=403)
@@ -584,23 +598,38 @@ def add_client_to_session(request, session_id):
         client = get_object_or_404(User, id=client_id)
         
         # Проверяем, не записан ли уже клиент
-        existing = Attendance.objects.filter(session=session, client=client).first()
+        existing = Booking.objects.filter(session=session, client=client).first()
         if existing:
             return JsonResponse({'error': 'Клиент уже записан на это занятие'}, status=400)
         
-        # Создаем запись о посещении
-        Attendance.objects.create(
+        # Проверяем возможность записи (баланс или абонемент)
+        can_book, message = PaymentService.can_book_session(client, session)
+        if not can_book:
+            return JsonResponse({'error': message}, status=400)
+        
+        # Создаем запись
+        booking = Booking.objects.create(
             session=session,
             client=client,
-            status='attended'
+            status='confirmed',
+            amount_paid=session.get_current_price()
         )
         
-        user = client.user
+        # Если есть активный абонемент для этого тарифа - используем его
+        active_subscription = Subscription.objects.filter(
+            client=client,
+            tariff=session.tariff,
+            status='active'
+        ).first()
+        
+        if active_subscription and active_subscription.is_valid():
+            PaymentService.use_subscription_for_booking(booking, active_subscription)
+        
         return JsonResponse({
             'success': True,
             'client': {
                 'id': client.id,
-                'name': f"{user.last_name if user else ''} {user.first_name if user else ''}".strip(),
+                'name': f"{client.last_name if client else ''} {client.first_name if client else ''}".strip(),
                 'phone': client.phone or '',
                 'role': client.role
             }
