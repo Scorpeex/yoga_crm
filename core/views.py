@@ -55,11 +55,10 @@ def calendar_view(request):
         # Проверяем суперадмина Django
         if request.user.is_superuser:
             is_admin = True
-        # Проверяем профиль клиента
-        elif hasattr(request.user, 'client_profile'):
-            client = request.user.client_profile
-            is_moderator = client.is_moderator
-            is_admin = client.is_admin
+        # Проверяем профиль клиента через роль
+        elif hasattr(request.user, 'role'):
+            is_moderator = request.user.role in ['moderator', 'admin']
+            is_admin = request.user.role == 'admin'
     
     return render(request, 'core/calendar.html', {
         'halls': halls,
@@ -172,9 +171,8 @@ def create_event(request):
     is_authorized = False
     if request.user.is_superuser or request.user.is_staff:
         is_authorized = True
-    elif hasattr(request.user, 'client_profile'):
-        client = request.user.client_profile
-        is_authorized = client.is_moderator
+    elif hasattr(request.user, 'role') and request.user.role in ['moderator', 'admin']:
+        is_authorized = True
     
     if not is_authorized:
         return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут создавать занятия'}, status=403)
@@ -270,9 +268,8 @@ def update_event(request, event_id):
     is_authorized = False
     if request.user.is_superuser or request.user.is_staff:
         is_authorized = True
-    elif hasattr(request.user, 'client_profile'):
-        client = request.user.client_profile
-        is_authorized = client.is_moderator
+    elif hasattr(request.user, 'role') and request.user.role in ['moderator', 'admin']:
+        is_authorized = True
     
     if not is_authorized:
         return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут редактировать занятия'}, status=403)
@@ -334,9 +331,8 @@ def delete_event(request, event_id):
     is_authorized = False
     if request.user.is_superuser or request.user.is_staff:
         is_authorized = True
-    elif hasattr(request.user, 'client_profile'):
-        client = request.user.client_profile
-        is_authorized = client.is_moderator
+    elif hasattr(request.user, 'role') and request.user.role in ['moderator', 'admin']:
+        is_authorized = True
     
     if not is_authorized:
         return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут удалять занятия'}, status=403)
@@ -380,9 +376,9 @@ def get_attendance(request, session_id):
         # Проверка прав доступа
         is_moderator = False
         current_user_client_id = None
-        if request.user.is_authenticated and hasattr(request.user, 'client_profile'):
-            client = request.user.client_profile
-            is_moderator = client.is_moderator
+        if request.user.is_authenticated:
+            client = request.user
+            is_moderator = client.role in ['moderator', 'admin']
             current_user_client_id = client.id
         
         # Получаем всех клиентов, записанных на это занятие
@@ -390,11 +386,11 @@ def get_attendance(request, session_id):
         
         attendance_list = []
         for attendance in attendances:
-            client_user = attendance.client.user
+            client_user = attendance.client
             attendance_data = {
                 'id': attendance.id,
                 'client_id': attendance.client.id,
-                'client_name': f"{client_user.last_name if client_user else ''} {client_user.first_name if client_user else ''}".strip(),
+                'client_name': f"{client_user.last_name} {client_user.first_name}".strip(),
                 'client_phone': attendance.client.phone or '',
                 'attended': attendance.status == 'attended',
                 'is_current_user': attendance.client_id == current_user_client_id,
@@ -424,9 +420,8 @@ def update_attendance(request, session_id):
     is_authorized = False
     if request.user.is_superuser or request.user.is_staff:
         is_authorized = True
-    elif hasattr(request.user, 'client_profile'):
-        client = request.user.client_profile
-        is_authorized = client.is_moderator
+    elif hasattr(request.user, 'role') and request.user.role in ['moderator', 'admin']:
+        is_authorized = True
     
     if not is_authorized:
         return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут управлять посещаемостью'}, status=403)
@@ -470,10 +465,11 @@ def enroll_to_class(request, session_id):
         return JsonResponse({'error': 'Доступ запрещен. Требуется авторизация'}, status=403)
     
     # Для записи на занятие нужен профиль клиента (ученик или модератор/админ)
-    if not hasattr(request.user, 'client_profile'):
+    # Проверяем, что пользователь имеет подходящую роль
+    if not hasattr(request.user, 'role') or request.user.role not in ['student', 'moderator', 'admin']:
         return JsonResponse({'error': 'Доступ запрещен. Требуется профиль клиента'}, status=403)
     
-    client = request.user.client_profile
+    client = request.user
     
     try:
         session = get_object_or_404(ClassSession, id=session_id)
@@ -517,10 +513,11 @@ def cancel_enrollment(request, session_id):
         return JsonResponse({'error': 'Доступ запрещен. Требуется авторизация'}, status=403)
     
     # Для отмены записи нужен профиль клиента (ученик или модератор/админ)
-    if not hasattr(request.user, 'client_profile'):
+    # Проверяем, что пользователь имеет подходящую роль
+    if not hasattr(request.user, 'role') or request.user.role not in ['student', 'moderator', 'admin']:
         return JsonResponse({'error': 'Доступ запрещен. Требуется профиль клиента'}, status=403)
     
-    client = request.user.client_profile
+    client = request.user
     
     try:
         session = get_object_or_404(ClassSession, id=session_id)
@@ -604,12 +601,14 @@ def add_client_to_session(request, session_id):
 def search_clients(request):
     """Поиск клиентов по имени/фамилии/телефону (только для модераторов и админов)"""
     # Проверка прав доступа
-    if not request.user.is_authenticated or not hasattr(request.user, 'client_profile'):
+    if not request.user.is_authenticated:
         return JsonResponse({'error': 'Доступ запрещен'}, status=403)
     
-    client = request.user.client_profile
-    if not client.is_moderator:
+    # Проверяем, что пользователь является модератором или администратором
+    if not hasattr(request.user, 'role') or request.user.role not in ['moderator', 'admin']:
         return JsonResponse({'error': 'Доступ запрещен. Только модераторы и администраторы могут искать клиентов'}, status=403)
+    
+    client = request.user
     
     try:
         query = request.GET.get('q', '')
@@ -619,17 +618,16 @@ def search_clients(request):
         
         # Ищем по фамилии, имени или телефону
         clients = User.objects.filter(
-            Q(user__first_name__icontains=query) |
-            Q(user__last_name__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
             Q(phone__icontains=query)
         ).filter(is_active=True)[:10]  # Ограничиваем до 10 результатов
         
         client_list = []
         for client in clients:
-            user = client.user
             client_list.append({
                 'id': client.id,
-                'name': f"{user.last_name if user else ''} {user.first_name if user else ''}".strip(),
+                'name': f"{client.last_name} {client.first_name}".strip(),
                 'phone': client.phone or '',
                 'role': client.role
             })
